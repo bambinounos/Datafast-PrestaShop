@@ -515,8 +515,12 @@ class datafast extends PaymentModule
                 $paymentService = new PaymentService();
               
                 $refundResp = $paymentService->requestRefund($request);
-                $objResponseRefund =  json_decode($refundResp, true); 
-                
+                $objResponseRefund =  json_decode($refundResp, true);
+
+                if (!is_array($objResponseRefund)) {
+                    $objResponseRefund = [];
+                }
+
                 $refund_id= $objResponseRefund['id'] ?? '';
                 $refund_referencedId= $objResponseRefund['referencedId'] ?? '';
                 $refund_paymentType= $objResponseRefund['paymentType'] ?? '';
@@ -1694,14 +1698,14 @@ class datafast extends PaymentModule
 
     public function hookPaymentOptions($params)
     {
-        
+        try {
             $payment = new Payment();
-            
+
             $request = $this->getDatafastRequest();
-			
+
             $productInfo[] = $this->getProductInfo();
             $customerInfo = $this->getCustomerInfo();
-           
+
             $registrations = $this->getCustomerRegistrations();
             $cartInfo = $this->getCartInfo();
             $amount = $this->getAmount();
@@ -1713,20 +1717,25 @@ class datafast extends PaymentModule
             $payment->setAmount($amount);
             $payment->setRequest($request);
 
-          
+
             $paymentService = new PaymentService();
-            
+
             $checkOutId = $paymentService->requestCheckoutId($payment);
-            
+
+            if (empty($checkOutId)) {
+                $this->getLogger()->error("No se pudo obtener checkoutId de Datafast.");
+                return [];
+            }
+
             $checkScript = $request->getCheckoutScript() . $checkOutId;
-            
+
             $action = $this->context->link->getModuleLink($this->name, 'result', array('datafastId' => $checkOutId), true);
-            
+
             $this->smarty->assign('action', $action);
             $this->smarty->assign('checkScript', $checkScript);
             $this->smarty->assign('checkOutId', $checkOutId);
-            
-            if ($this->context->customer->isLogged()) 
+
+            if ($this->context->customer->isLogged())
             {
 			    $this->smarty->assign('customertoken', Configuration::get('DATAFAST_CUSTOMERTOKEN', null));
             }
@@ -1751,12 +1760,12 @@ class datafast extends PaymentModule
 			else
 			{
 				$requirecvv="false";
-			} 
+			}
 
 			$this->smarty->assign('style', $style);
-            $this->smarty->assign('requirecvv', $requirecvv); 
-			
-        
+            $this->smarty->assign('requirecvv', $requirecvv);
+
+
             $arr = [];
             $defaultTermType = '';
             $defaultInstallments = '';
@@ -1773,17 +1782,17 @@ class datafast extends PaymentModule
                     }
                     $i++;
                 }
-            } 
+            }
 
 
             $removetoken = AdminController::$currentIndex . '&configure=' . $this->name.'&viewTransactions&token=' .Tools::getAdminTokenLite('AdminModules');
 
-            $this->smarty->assign("termtypes",$arr); 
-            $this->smarty->assign("defaultTermType",$defaultTermType); 
-            $this->smarty->assign("defaultInstallments",$defaultInstallments); 
-            $this->smarty->assign("removetoken", $removetoken);  
+            $this->smarty->assign("termtypes",$arr);
+            $this->smarty->assign("defaultTermType",$defaultTermType);
+            $this->smarty->assign("defaultInstallments",$defaultInstallments);
+            $this->smarty->assign("removetoken", $removetoken);
             $setAdditionalInformation = $this->fetch('module:datafast/views/templates/hook/datafastPayment.tpl');
-            
+
             $newOption = new PaymentOption();
             $newOption->setModuleName($this->name)
                 ->setCallToActionText($this->trans('Pago con Datafast', array(), 'Pago con Datafast'))
@@ -1791,6 +1800,13 @@ class datafast extends PaymentModule
                 ->setAdditionalInformation($setAdditionalInformation);
             return [$newOption];
 
+        } catch (\Exception $e) {
+            $this->getLogger()->error("Error al mostrar opción de pago Datafast: " . $e->getMessage());
+            return [];
+        } catch (\Error $e) {
+            $this->getLogger()->error("Error fatal al mostrar opción de pago Datafast: " . $e->getMessage());
+            return [];
+        }
     }
 
     /**
