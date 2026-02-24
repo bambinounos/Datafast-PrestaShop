@@ -1,0 +1,455 @@
+<?php
+
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use datafast\payment\model\Constants;
+use datafast\payment\PaymentService;
+use datafast\payment\datafast\payment\Config;
+use datafast\payment\datafast\payment\model\Message;
+use datafast\payment\datafast\payment\model\PaymentResponse;
+
+
+
+class datafastResultModuleFrontController extends ModuleFrontController
+{
+
+    public function postProcess()
+    {
+        parent::initContent();
+
+            if (!$this->isPaymentMethodValid()) {
+                die($this->module->l('This payment method is not available.', 'datafast'));
+            }
+
+            $cart = $this->context->cart;
+            if (!$cart || !$cart->id_customer || !$cart->id_address_delivery || !$cart->id_address_invoice) {
+                $this->redirectTo('order', array('step' => 1));
+            }
+
+            $customer = new Customer($cart->id_customer);
+            if (!Validate::isLoadedObject($customer)) {
+                $this->redirectTo('order', array('step' => 1));
+            }
+
+            $secureKey = $customer->secure_key;
+
+            $paymentService = new PaymentService();
+
+            $config = new Config();
+            $data = [];
+            $data['DATAFAST_DEV']=Configuration::get('DATAFAST_DEV', null);
+            $data['DATAFAST_BEARER_TOKEN']=Configuration::get('DATAFAST_BEARER_TOKEN', null);
+            $data['DATAFAST_ENTITY_ID']=Configuration::get('DATAFAST_ENTITY_ID', null);
+            $data['DATAFAST_MID']=Configuration::get('DATAFAST_MID', null);
+            $data['DATAFAST_TID']=Configuration::get('DATAFAST_TID', null);
+            $data['DATAFAST_RISK']=Configuration::get('DATAFAST_RISK', null);
+            $data['DATAFAST_PROVEEDOR']=Configuration::get('DATAFAST_PROVEEDOR', null);
+			$data['DATAFAST_PREFIJOTRX']=Configuration::get('DATAFAST_PREFIJOTRX', null);
+            $data['DATAFAST_PRODULR']=Configuration::get('DATAFAST_PRODULR', null);
+            $data['DATAFAST_DEVURL']=Configuration::get('DATAFAST_DEVURL', null);
+			
+            $request = $config->getDatafastRequest($data);
+            
+            
+            $cart_id= $this->context->cart->id;
+            $order_id = (int)Tools::getValue('order_id');
+            $payment_id = trim((string)Tools::getValue('MD'));
+
+            
+            $checkOutId = Tools::getValue('id');
+            $resourcePathUri = str_replace("{id}", $checkOutId, $request->getResourcePathUri());
+
+            $this->getLogger()->debug("resourcePathUri--->" . $resourcePathUri);
+            $request->setResourcePathUri($resourcePathUri);
+            
+			$paymentResp = $paymentService->processPayment($request);
+          
+            $objResponse =  json_decode($paymentResp, true);
+            $resultCode = $objResponse["result"]["code"];
+            $resultdescription=  str_replace("'","\'", $objResponse['result']['description'] ?? '');
+            $accepted = $this->validateTransaction($resultCode);
+
+            $total = (float)$cart->getOrderTotal(true, Cart::BOTH);
+            $module_name = $this->module->displayName;
+                
+            $this->addTransaction($cart_id,$customer->id,$total,$accepted,"",$objResponse);
+			
+			$datafastExtendedDescripcion = $objResponse['resultDetails']['ExtendedDescription'] ?? '';
+			if ($datafastExtendedDescripcion == "")
+            {
+                $datafastExtendedDescripcion = $resultdescription;   
+            }
+            $refunded=false;
+            if(($objResponse["amount"]!=null  && isset($objResponse["amount"])) && number_format($total, 2,'.','') != $objResponse["amount"])
+            { 
+                $request->setAmount( $objResponse['amount']);
+                $request->setTransactionId( $objResponse['id']); 
+                $refundResp = $paymentService->requestRefund($request);
+                $objResponseRefund =  json_decode($refundResp, true); 
+                
+                $refund_id= $objResponseRefund['id'] ?? '';
+                $refund_referencedId= $objResponseRefund['referencedId'] ?? '';
+                $refund_paymentType= $objResponseRefund['paymentType'] ?? '';
+                $refund_amount= $objResponseRefund['amount'] ?? '';
+                $refund_currency= $objResponseRefund['currency'] ?? '';
+                $refund_descriptor= $objResponseRefund['descriptor'] ?? '';
+                $refund_merchantTransactionId= $objResponseRefund['merchantTransactionId'] ?? '';
+                $refund_resultCode= $objResponseRefund['result']['code'] ?? '';
+                $refund_description= str_replace("'","\'", $objResponseRefund['result']['description'] ?? '');
+                $refund_ExtendedDescription= str_replace("'","\'", $objResponseRefund['resultDetails']['ExtendedDescription'] ?? '');
+                if ($refund_ExtendedDescription == "")
+                {
+                    $refund_ExtendedDescription = $refund_description;
+                }
+                $refund_clearingInstituteName= str_replace("'","\'", $objResponseRefund['resultDetails']['clearingInstituteName'] ?? '');
+                $refund_ConnectorTxID1= str_replace("'","\'", $objResponseRefund['resultDetails']['ConnectorTxID1'] ?? '');
+                $refund_ReferenceNbr = str_replace("'","\'", $objResponseRefund['resultDetails']['ReferenceNo'] ?? '');
+                $refund_BatchNo = str_replace("'","\'", $objResponseRefund['resultDetails']['BatchNo'] ?? '');
+                $refund_response =  str_replace("'","\'", $objResponseRefund['resultDetails']['Response'] ?? '');
+                $refund_authcode =  str_replace("'","\'", $objResponseRefund['resultDetails']['AuthCode'] ?? '');
+                $refund_acquirercode =  str_replace("'","\'", $objResponseRefund['resultDetails']['AcquirerCode'] ?? '');
+                $refund_totalamount =  str_replace("'","\'", $objResponseRefund['resultDetails']['TotalAmount'] ?? '');
+                $refund_interest =  str_replace("'","\'", $objResponseRefund['resultDetails']['Interest'] ?? '');
+                $refund_timestamp= $objResponseRefund['timestamp'] ?? '';
+                $refund_status = "1";
+                $refund_resp=  str_replace("'","\'",$refundResp);
+ 
+                
+                $accepted = $this->validateTransactionRefund($refund_resultCode);
+                
+                if ($accepted==1)
+                {
+                    
+                        $query = 'UPDATE ' . _DB_PREFIX_ . 'datafast_transactions
+                                    SET     status = 2 
+                                    WHERE   transaction_id = \'' . $objResponse['id'].'\' 
+                                    AND     status       =   1';
+                        Db::getInstance()->execute($query); 
+                }
+                else
+                {
+                        $messagerefundDatafast = '<div class="conf confirm alert alert-danger">Registro no reversado. Mensaje del banco: '.$refund_ExtendedDescription.'.</div>';
+                }
+
+
+                                $query = 'INSERT INTO ' . _DB_PREFIX_ . 'datafast_transactions
+                                (`cart_id`, 
+                                `customer_id`, 
+                                `transaction_id`, 
+                                `payment_type`,
+                                `amount`,
+                                `merchant_transactionId`,
+                                `result_code`,
+                                `result_description`,
+                                `extended_description`,
+                                `reference_no`,
+                                `batch_no`,
+                                `response`,
+                                `auth_code`,
+                                `acquirer_code`,
+                                `total_amount`,
+                                `interest`,
+                                `timestamp`,
+                                `response_json`,
+                                `status`,
+                                `updated_at`)
+                                    VALUES ( 
+                                    ' . $cart_id . ',
+                                    \'' .  $customer->id. '\',
+                                    \'' .$refund_id . '\',
+                                    \'' .$refund_paymentType . '\',
+                                    \'' . $refund_amount . '\',
+                                    \'' . $refund_merchantTransactionId . '\',
+                                    \'' . $refund_resultCode . '\',
+                                    \'' . $refund_description . '\',
+                                    \'' . $refund_ExtendedDescription . '\',
+                                    \'' . $refund_ReferenceNbr . '\',
+                                    \'' . $refund_BatchNo . '\',
+                                    \'' . $refund_response . '\',
+                                    \'' . $refund_authcode . '\',
+                                    \'' . $refund_acquirercode . '\',
+                                    \'' . $refund_totalamount . '\',
+                                    \'' . $refund_interest . '\',
+                                    \'' . $refund_timestamp . '\',
+                                    \'' . $refund_resp . '\',
+                                    \'' . $refund_status . '\',
+                                    \'' . date('Y-m-d H:i:s') . '\'
+                            )';
+  
+                      
+                Db::getInstance()->execute($query);
+                $refunded=true;
+                $datafastExtendedDescripcion = "Los valores del carrito de compra fueron cambiados. Se procederá a anular la transacción para que pueda repetir su pago.";
+            }
+            if ($accepted && !$refunded) {
+				 
+                $payment_status = Configuration::get('PS_OS_PAYMENT', null);
+                $message = $this->l('El pago se registró correctamente');
+                
+                $datafastBrand = $objResponse['paymentBrand'];
+                $datafastAmount = $objResponse['amount'];
+                $datafastAuth = $objResponse['resultDetails']['AuthCode'];
+                $datafastCardHolder = $objResponse['card']['holder'];
+				
+				
+				Context::getContext()->cookie->datafastBrand = $datafastBrand;
+                Context::getContext()->cookie->datafastAmount = $datafastAmount;
+                Context::getContext()->cookie->datafastAuth = $datafastAuth;
+                Context::getContext()->cookie->datafastCardHolder = $datafastCardHolder;
+				Context::getContext()->cookie->datafastExtendedDescripcion = $datafastExtendedDescripcion;
+				
+                $this->module->validateOrder((int)$cart_id, $payment_status, $total, $module_name, $message, array(), (int)$cart->id_currency, false, $secureKey);
+                
+                $this->redirectTo('order-confirmation', array(
+                    'id_cart' => (int)$cart_id,
+                    'id_module' => (int)$this->module->id,
+                    'id_order' => (int)$this->module->currentOrder,
+                    'key' => $customer->secure_key
+                ));
+            } else {
+				
+                $logInfo = "Error en el pago  de:  " . $total . ", customer id: " . $customer->id . " cart id: " . $cart->id . " order id" . $this->module->currentOrder . " Detalle: " . $datafastExtendedDescripcion;
+                $this->getLogger()->info($logInfo);
+
+                Context::getContext()->cookie->errorMessage = $datafastExtendedDescripcion;
+                Tools::redirect(Context::getContext()->link->getModuleLink('datafast', 'error', array()));
+            }
+ 
+    }
+
+    private function isPaymentMethodValid()
+    {
+        if (!$this->module->active) {
+            return false;
+        }
+
+        if (method_exists('Module', 'getPaymentModules')) {
+            foreach (Module::getPaymentModules() as $module) {
+                if (isset($module['name']) && $module['name'] === $this->module->name) {
+                    return true;
+                }
+            }
+        } else {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function redirectTo($controller, array $params = array())
+    {
+        $query_string = !empty($params) ? http_build_query($params) : '';
+
+        Tools::redirect('index.php?controller=' . $controller . '&' . $query_string);
+
+    }
+
+    /**
+     * @return Logger
+     */
+    private function getLogger(): Logger
+    {
+        $logger = new Logger('PaymentFrontController');
+        $logger->pushHandler(new StreamHandler(Constants::LOGGER_FILE, Logger::DEBUG));
+        return $logger;
+    }
+
+    private function validateTransaction(string $resultCode): bool
+    {
+		
+        $testMode = Configuration::get('DATAFAST_DEV', null);
+        $validTransaction = false;
+
+        if (in_array($resultCode, Constants::TRANSACTION_APPROVED_TEST) && $testMode) {
+            $validTransaction = true;
+        }
+        if ($resultCode == Constants::TRANSACTION_APPROVED_PROD && !$testMode) {
+            $validTransaction = true;
+        } 
+        return $validTransaction;
+    }
+
+    private function validateTransactionRefund(string $resultCode): bool
+    {
+		
+        $testMode = Configuration::get('DATAFAST_DEV', null);
+        $validTransaction = false;
+
+        if (in_array($resultCode, Constants::TRANSACTION_APPROVED_TEST) && $testMode) {
+            $validTransaction = true;
+        }
+        if ($resultCode == Constants::TRANSACTION_APPROVED_PROD && !$testMode) {
+            $validTransaction = true;
+        }
+        return $validTransaction;
+    }
+
+
+    private function addTransaction($cart_id,$customer_id,$amount,$accepted,$paymentRequest,$paymentResponse)
+    {        
+        $resultCode = $paymentResponse["result"]["code"];
+		$message = "";
+ 
+        $transaction_id = '';
+        $amount = 0;
+        $transaction_id = '';
+        $payment_type = '';
+        $payment_brand = '';
+        $merchant_transactionId= '';
+        $result_code = '';
+        $extended_description= '';
+        $acquirer_response = '';
+        $batch_no = '';
+        $total_amount = '';
+        $reference_no = '';
+        $bin = '';
+        $last_4_Digits = '';
+        $email = '';
+        $shopper_mid= '';
+        $shopper_tid = '';
+        $timestamp = '';
+        $response = '';
+
+        $checkout_id = isset( $paymentResponse['id'] )? $paymentResponse['id']:null;
+        $result_code = $paymentResponse['result']['code'] ?? '';
+        $result_description=  str_replace("'","\'", $paymentResponse['result']['description'] ?? '');
+        $request_json = str_replace("'","\'",json_encode($paymentRequest));
+        $response_json = str_replace("'","\'",json_encode($paymentResponse));
+        $timestamp = $paymentResponse['timestamp'] ?? '';
+        
+        $status = "0";
+               
+
+            $amount = $paymentResponse['amount'] ?? '';
+
+            $transaction_id = isset( $paymentResponse['id'] )? $paymentResponse['id']:null;
+            $payment_type = $paymentResponse['paymentType'] ?? '';
+            $payment_brand = $paymentResponse['paymentBrand'] ?? '';
+            $amount = $paymentResponse['amount'] ?? '';
+            $merchant_transactionId= $paymentResponse['merchantTransactionId'] ?? '';
+
+            $extended_description=  str_replace("'","\'", $paymentResponse['resultDetails']['ExtendedDescription'] ?? '');
+            if ($extended_description == "")
+            {
+             $extended_description = $result_description;   
+            }
+            $response = $paymentResponse['resultDetails']['Response'] ?? '';
+            $acquirer_response = $paymentResponse['resultDetails']['AcquirerResponse'] ?? '';
+            $auth_code = isset( $paymentResponse['resultDetails']['AuthCode'])? $paymentResponse['resultDetails']['AuthCode']:null;
+            $acquirer_code = isset( $paymentResponse['resultDetails']['AcquirerCode'])?$paymentResponse['resultDetails']['AcquirerCode']:null;
+            $batch_no = isset($paymentResponse['resultDetails']['BatchNo'])?$paymentResponse['resultDetails']['BatchNo']:null ;
+            $interest = isset($paymentResponse['resultDetails']['Interest'])?$paymentResponse['resultDetails']['Interest']:null ;
+            $total_amount = isset($paymentResponse['resultDetails']['TotalAmount'])?$paymentResponse['resultDetails']['TotalAmount']:null ;
+            $reference_no = isset($paymentResponse['resultDetails']['ReferenceNo'])?$paymentResponse['resultDetails']['ReferenceNo']:null ;
+            $bin = isset($paymentResponse['card']['bin'])?$paymentResponse['card']['bin']:null ;
+            $last_4_Digits = isset($paymentResponse['card']['last4Digits'])?$paymentResponse['card']['last4Digits']:null ;
+            $email = isset($paymentResponse['customer']['email'])?str_replace("'","\'",$paymentResponse['customer']['email']):null  ;
+            $shopper_mid = isset($paymentResponse['customParameters']['SHOPPER_MID'])?$paymentResponse['customParameters']['SHOPPER_MID']:null  ;
+            $shopper_tid = isset( $paymentResponse['customParameters']['SHOPPER_TID'])? $paymentResponse['customParameters']['SHOPPER_TID']:null;
+        
+        
+        if ($accepted) {  
+
+            $registrationId = $paymentResponse['registrationId'];
+            $status = "1";
+     
+            if ($registrationId <> "")
+            {
+
+                $sqlCount = '
+                SELECT COUNT(tkn.id)    AS CountToken
+                FROM `' . _DB_PREFIX_ . 'datafast_customertoken` tkn
+                WHERE tkn.`token` = \'' .$registrationId . '\'';
+                $countToken = Db::getInstance()->executeS($sqlCount);  
+                    $countTkn = $countToken[0]['CountToken'];
+
+            
+                if ($countTkn == 0)
+                {
+                    $query = 'INSERT INTO ' . _DB_PREFIX_ . 'datafast_customertoken
+                    (`customer_id`, 
+                    `token`, 
+                    `status`,
+                    `updated_at`)
+                        VALUES ( 
+                                \'' . $customer_id . '\',
+                                \'' .$registrationId . '\',
+                                \'1\',
+                                \'' . date('Y-m-d H:i:s') . '\'
+                                )';
+                    Db::getInstance()->execute($query);
+                }
+            }
+        }
+ 
+        $query = 'INSERT INTO ' . _DB_PREFIX_ . 'datafast_transactions
+                             (`cart_id`, 
+                             `customer_id`, 
+                             `transaction_id`, 
+                             `checkout_id`, 
+                             `payment_type`,
+                             `payment_brand`,
+                             `amount`,
+                             `merchant_transactionId`,
+                             `result_code`,
+                             `result_description`,
+                             `extended_description`,
+                             `acquirer_response`,
+                             `response`,
+                             `auth_code`,
+                             `acquirer_code`,
+                             `batch_no`,
+                             `interest`,
+                             `total_amount`,
+                             `reference_no`,
+                             `bin`,
+                             `last_4_Digits`,
+                             `email`,
+                             `shopper_mid`,
+                             `shopper_tid`,
+                             `timestamp`,
+                             `request_json`,
+                             `response_json`,
+                             `status`,
+                             `updated_at`)
+                                 VALUES ( 
+                                    ' . $cart_id . ',
+                                    \'' . $customer_id . '\',
+                                    \'' .$transaction_id . '\',
+                                    \'' .$checkout_id . '\',
+                                    \'' . $payment_type . '\',
+                                    \'' . $payment_brand . '\',
+                                    \'' . $amount . '\',
+                                    \'' . $merchant_transactionId . '\',
+                                    \'' . $result_code . '\',
+                                    \'' . $result_description . '\',
+                                    \'' . $extended_description . '\',
+                                    \'' . $acquirer_response . '\',
+                                    \'' . $response . '\',
+                                    \'' . $auth_code . '\',
+                                    \'' . $acquirer_code . '\',
+                                    \'' . $batch_no . '\',
+                                    \'' . $interest . '\',
+                                    \'' . $total_amount . '\',
+                                    \'' . $reference_no . '\',
+                                    \'' . $bin . '\',
+                                    \'' . $last_4_Digits . '\',
+                                    \'' . $email . '\',
+                                    \'' . $shopper_mid . '\',
+                                    \'' . $shopper_tid . '\',
+                                    \'' . $timestamp . '\',
+                                    \'' . $request_json . '\',
+                                    \'' . $response_json . '\',
+                                    \'' . $status . '\',
+                                    \'' . date('Y-m-d H:i:s') . '\'
+                         )';
+        Db::getInstance()->execute($query);
+       
+    }
+
+    private function getDetailErrorMessage(string $resultCode): string
+    {
+        return Message::getClientMessageDescription($resultCode);
+    }
+}
+
