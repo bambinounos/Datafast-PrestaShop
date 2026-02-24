@@ -72,6 +72,31 @@ Actualización de compatibilidad para PHP 8.1+ y PrestaShop 9.x.
 #### Variables no inicializadas
 - Inicializadas variables antes de su uso: `$arr`, `$txtOrden`, `$txtIdTrx`, `$data`, `$duplicates`, `$errorsTrxs`, `$success`, `$defaultTermType`, `$defaultInstallments`, `$response` en `requestRefund()`
 
+#### Fix de páginas en blanco
+Corregido el problema donde el módulo mostraba una **página en blanco** cuando ocurrían errores durante el proceso de pago (reportado en PHP 7.4 + PrestaShop 1.7.8).
+
+**Causas raíz identificadas:**
+
+| # | Causa | Efecto |
+|---|-------|--------|
+| 1 | `processPayment()` devolvía string vacío o error cURL → `json_decode()` retornaba `null` → acceso a `null["result"]["code"]` | Fatal Error sin captura |
+| 2 | `PaymentResponse::paymentError()` llamaba constructor sin los 12 parámetros requeridos | `ArgumentCountError` |
+| 3 | `hookPaymentOptions()` sin try/catch: si la API fallaba, el checkout completo se rompía | Página de checkout en blanco |
+| 4 | Zero `try/catch` en todo `postProcess()` del controlador de resultado | Cualquier excepción = blank |
+| 5 | `$paymentResponse['registrationId']` sin verificar existencia de la key | Warning/Fatal según PHP |
+
+**Correcciones:**
+- `try/catch(\Exception + \Error)` en `postProcess()` → redirige a página de error con mensaje amigable en lugar de página en blanco
+- Validación de respuesta API (`json_decode`) antes de procesarla: si es `null`, redirige a error
+- `try/catch` en `addTransaction()` para que un fallo en BD no rompa el flujo de pago
+- `try/catch` en `hookPaymentOptions()`: si falla, retorna `[]` (oculta opción de pago en lugar de romper el checkout)
+- Validación de `checkOutId` vacío antes de mostrar formulario de pago
+- Validación de `$objResponseRefund` en refunds antes de acceder a keys
+- Accesos a `paymentBrand`, `amount`, `AuthCode`, `holder` protegidos con `?? ''`
+- `$registrationId` protegido con `?? ''`
+- `addTransaction()` usa `pSQL()` para escapar valores en INSERT
+- `return` después de `redirectTo()` para evitar ejecución de código residual
+
 ### v1.1.6 (original)
 - Versión original del módulo para PHP 7.2+ y PrestaShop 1.7+
 
