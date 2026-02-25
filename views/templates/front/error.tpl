@@ -24,7 +24,7 @@
 
                     <div class="ps-shown-by-js">
                         <article class="alert alert-danger mt-2 js-alert-payment-conditions" role="alert" data-alert="danger">
-                            Lo sentimos, tu orden no se pudo procesar. Respuesta del banco: <strong>{$error_msg}</strong>
+                            Lo sentimos, tu orden no se pudo procesar. Respuesta del banco: <strong>{$error_msg|escape:'html':'UTF-8'}</strong>
                         </article>
                         <a href="{$redirect}" class="btn btn-primary center-block">Regresar al carrito de compras</a><br/>
                     </div>

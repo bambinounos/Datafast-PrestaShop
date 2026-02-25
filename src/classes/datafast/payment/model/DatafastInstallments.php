@@ -35,10 +35,10 @@ class DatafastInstallments extends ObjectModel
        
         return Db::getInstance()->execute('
 			UPDATE `' . _DB_PREFIX_ . 'datafast_installments`
-            SET `name` = \''. $this->name.'\'
+            SET `name` = \''. pSQL($this->name).'\'
             ,`id_termtype` = ' . (int) $this->id_termtype.'
             ,`installments` = ' . (int) $this->installments.'
-            ,`active` = ' .  $this->active.'
+            ,`active` = ' . (int) $this->active.'
 			WHERE `id_installment` = ' . (int) $this->id_installment);
     }
 
@@ -47,13 +47,13 @@ class DatafastInstallments extends ObjectModel
     {
   
         return Db::getInstance()->execute('
-        INSERT INTO `' . _DB_PREFIX_ . 'datafast_installments` 
+        INSERT INTO `' . _DB_PREFIX_ . 'datafast_installments`
         (name,id_termtype,installments,active,deleted)
-        VALUES (\''. $this->name.'\'
-        ,'. $this->id_termtype.'
-        ,'. $this->installments.'
-        ,'. $this->active.'
-        ,'. $this->deleted.')');
+        VALUES (\''. pSQL($this->name).'\'
+        ,'. (int)$this->id_termtype.'
+        ,'. (int)$this->installments.'
+        ,'. (int)$this->active.'
+        ,'. (int)$this->deleted.')');
     }
 
     public function deleteInstallment()

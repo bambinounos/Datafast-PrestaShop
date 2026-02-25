@@ -53,7 +53,7 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.0.0';
+        $this->version = '2.1.0';
         $this->author = 'Sismetic';
         $this->need_instance = 0;
         $this->is_configurable = 1;
@@ -355,6 +355,7 @@ class datafast extends PaymentModule
         Configuration::deleteByName('DATAFAST_TID');
         Configuration::deleteByName('DATAFAST_RISK');
         Configuration::deleteByName('DATAFAST_PROVEEDOR');
+        Configuration::deleteByName('DATAFAST_ECI');
         Configuration::deleteByName('DATAFAST_PREFIJOTRX');
 		Configuration::deleteByName('DATAFAST_CUSTOMERTOKEN');
         Configuration::deleteByName('DATAFAST_STYLE');
@@ -385,6 +386,7 @@ class datafast extends PaymentModule
             Configuration::updateValue('DATAFAST_TID', Tools::getValue('DATAFAST_TID'));
             Configuration::updateValue('DATAFAST_RISK', Tools::getValue('DATAFAST_RISK'));
             Configuration::updateValue('DATAFAST_PROVEEDOR', Tools::getValue('DATAFAST_PROVEEDOR'));
+            Configuration::updateValue('DATAFAST_ECI', Tools::getValue('DATAFAST_ECI'));
             Configuration::updateValue('DATAFAST_PREFIJOTRX', Tools::getValue('DATAFAST_PREFIJOTRX'));
             Configuration::updateValue('DATAFAST_CUSTOMERTOKEN', Tools::getValue('DATAFAST_CUSTOMERTOKEN'));
             Configuration::updateValue('DATAFAST_STYLE', Tools::getValue('DATAFAST_STYLE'));
@@ -529,24 +531,24 @@ class datafast extends PaymentModule
                 $refund_descriptor= $objResponseRefund['descriptor'] ?? '';
                 $refund_merchantTransactionId= $objResponseRefund['merchantTransactionId'] ?? '';
                 $refund_resultCode= $objResponseRefund['result']['code'] ?? '';
-                $refund_description= str_replace("'","\'", $objResponseRefund['result']['description'] ?? '');
-                $refund_ExtendedDescription= str_replace("'","\'", $objResponseRefund['resultDetails']['ExtendedDescription'] ?? '');
+                $refund_description= $objResponseRefund['result']['description'] ?? '';
+                $refund_ExtendedDescription= $objResponseRefund['resultDetails']['ExtendedDescription'] ?? '';
                 if ($refund_ExtendedDescription == "")
                 {
                     $refund_ExtendedDescription = $refund_description;
                 }
-                $refund_clearingInstituteName= str_replace("'","\'", $objResponseRefund['resultDetails']['clearingInstituteName'] ?? '');
-                $refund_ConnectorTxID1= str_replace("'","\'", $objResponseRefund['resultDetails']['ConnectorTxID1'] ?? '');
-                $refund_ReferenceNbr = str_replace("'","\'", $objResponseRefund['resultDetails']['ReferenceNo'] ?? '');
-                $refund_BatchNo = str_replace("'","\'", $objResponseRefund['resultDetails']['BatchNo'] ?? '');
-                $refund_response =  str_replace("'","\'", $objResponseRefund['resultDetails']['Response'] ?? '');
-                $refund_authcode =  str_replace("'","\'", $objResponseRefund['resultDetails']['AuthCode'] ?? '');
-                $refund_acquirercode =  str_replace("'","\'", $objResponseRefund['resultDetails']['AcquirerCode'] ?? '');
-                $refund_totalamount =  str_replace("'","\'", $objResponseRefund['resultDetails']['TotalAmount'] ?? '');
-                $refund_interest =  str_replace("'","\'", $objResponseRefund['resultDetails']['Interest'] ?? '');
+                $refund_clearingInstituteName= $objResponseRefund['resultDetails']['clearingInstituteName'] ?? '';
+                $refund_ConnectorTxID1= $objResponseRefund['resultDetails']['ConnectorTxID1'] ?? '';
+                $refund_ReferenceNbr = $objResponseRefund['resultDetails']['ReferenceNo'] ?? '';
+                $refund_BatchNo = $objResponseRefund['resultDetails']['BatchNo'] ?? '';
+                $refund_response = $objResponseRefund['resultDetails']['Response'] ?? '';
+                $refund_authcode = $objResponseRefund['resultDetails']['AuthCode'] ?? '';
+                $refund_acquirercode = $objResponseRefund['resultDetails']['AcquirerCode'] ?? '';
+                $refund_totalamount = $objResponseRefund['resultDetails']['TotalAmount'] ?? '';
+                $refund_interest = $objResponseRefund['resultDetails']['Interest'] ?? '';
                 $refund_timestamp= $objResponseRefund['timestamp'] ?? '';
                 $refund_status = "1";
-                $refund_resp=  str_replace("'","\'",$refundResp);
+                $refund_resp= $refundResp;
 
 
                 $accepted = $this->validateTransactionRefund($refund_resultCode);
@@ -556,7 +558,7 @@ class datafast extends PaymentModule
 
                         $query = 'UPDATE ' . _DB_PREFIX_ . 'datafast_transactions
                                     SET     status      =    2
-                                    WHERE   id          =   ' . $id_transaction.'
+                                    WHERE   id          =   ' . (int)$id_transaction.'
                                     AND     status       =   1';
                         Db::getInstance()->execute($query);
 
@@ -565,7 +567,7 @@ class datafast extends PaymentModule
                 }
                 else
                 {
-                        $messagerefundDatafast = '<div class="conf confirm alert alert-danger">Registro no reversado. Mensaje del banco: '.$refund_ExtendedDescription.'.</div>';
+                        $messagerefundDatafast = '<div class="conf confirm alert alert-danger">Registro no reversado. Mensaje del banco: '.htmlspecialchars($refund_ExtendedDescription, ENT_QUOTES, 'UTF-8').'.</div>';
                 }
 
 
@@ -590,26 +592,26 @@ class datafast extends PaymentModule
                                 `response_json`,
                                 `status`,
                                 `updated_at`)
-                                    VALUES ( 
-                                    ' . $cart_id . ',
-                                    \'' . $customer_id . '\',
-                                    \'' .$refund_id . '\',
-                                    \'' .$refund_paymentType . '\',
-                                    \'' . $refund_amount . '\',
-                                    \'' . $refund_merchantTransactionId . '\',
-                                    \'' . $refund_resultCode . '\',
-                                    \'' . $refund_description . '\',
-                                    \'' . $refund_ExtendedDescription . '\',
-                                    \'' . $refund_ReferenceNbr . '\',
-                                    \'' . $refund_BatchNo . '\',
-                                    \'' . $refund_response . '\',
-                                    \'' . $refund_authcode . '\',
-                                    \'' . $refund_acquirercode . '\',
-                                    \'' . $refund_totalamount . '\',
-                                    \'' . $refund_interest . '\',
-                                    \'' . $refund_timestamp . '\',
-                                    \'' . $refund_resp . '\',
-                                    \'' . $refund_status . '\',
+                                    VALUES (
+                                    ' . (int)$cart_id . ',
+                                    \'' . pSQL($customer_id) . '\',
+                                    \'' . pSQL($refund_id) . '\',
+                                    \'' . pSQL($refund_paymentType) . '\',
+                                    \'' . pSQL($refund_amount) . '\',
+                                    \'' . pSQL($refund_merchantTransactionId) . '\',
+                                    \'' . pSQL($refund_resultCode) . '\',
+                                    \'' . pSQL($refund_description) . '\',
+                                    \'' . pSQL($refund_ExtendedDescription) . '\',
+                                    \'' . pSQL($refund_ReferenceNbr) . '\',
+                                    \'' . pSQL($refund_BatchNo) . '\',
+                                    \'' . pSQL($refund_response) . '\',
+                                    \'' . pSQL($refund_authcode) . '\',
+                                    \'' . pSQL($refund_acquirercode) . '\',
+                                    \'' . pSQL($refund_totalamount) . '\',
+                                    \'' . pSQL($refund_interest) . '\',
+                                    \'' . pSQL($refund_timestamp) . '\',
+                                    \'' . pSQL($refund_resp) . '\',
+                                    \'' . pSQL($refund_status) . '\',
                                     \'' . date('Y-m-d H:i:s') . '\'
                             )';
   
@@ -682,9 +684,9 @@ class datafast extends PaymentModule
                 foreach ($trxs as $key => $value) {  
                     $table_name = _DB_PREFIX_  . 'datafast_transactions';  
                     $sqlCount = '
-                    SELECT COUNT(id)    AS Count 
+                    SELECT COUNT(id)    AS Count
                     FROM '.$table_name.'
-                    WHERE transaction_id = \''.$value.'\'';
+                    WHERE transaction_id = \''.pSQL($value).'\'';
                     $count = Db::getInstance()->executeS($sqlCount);  
                         $count = $count[0]['Count']; 
                     if ($count > 0)
@@ -723,31 +725,31 @@ class datafast extends PaymentModule
                                                  `response_json`,
                                                  `status`,
                                                  `updated_at` )
-                                                     VALUES (  
-                                                        \'' . (isset($response['customer']['merchantCustomerId']) ? str_replace("'","\'",$response['customer']['merchantCustomerId']) : null). '\',
-                                                        \'' .(isset($response['id']) ? str_replace("'","\'",$response['id']) : null). '\', 
-                                                        \'' . (isset($response['paymentType']) ? str_replace("'","\'",$response['paymentType']) : null) . '\',
-                                                        \'' . (isset($response['paymentBrand']) ? str_replace("'","\'",$response['paymentBrand']) : null) . '\',
-                                                        \'' . (isset($response['amount']) ? str_replace("'","\'",str_replace(',','',$response['amount'] )) : null) . '\',
-                                                        \'' . (isset($response['merchantTransactionId']) ? str_replace("'","\'",$response['merchantTransactionId']) : null). '\',
-                                                        \'' . (isset($response['result']['code']) ? str_replace("'","\'",$response['result']['code']) : null) . '\',
-                                                        \'' . (isset($response['result']['description']) ? str_replace("'","\'",$response['result']['description']) : null) . '\',
-                                                        \'' . (isset($response['resultDetails']['ExtendedDescription']) ? str_replace("'","\'",$response['resultDetails']['ExtendedDescription']) : null). '\',
-                                                        \'' . (isset($response['resultDetails']['AcquirerResponse']) ? str_replace("'","\'",$response['resultDetails']['AcquirerResponse']) : null) . '\',
-                                                        \'' . (isset($response['resultDetails']['response']) ? str_replace("'","\'",$response['resultDetails']['response']) : null). '\',
-                                                        \'' . (isset($response['resultDetails']['AuthCode']) ? str_replace("'","\'",$response['resultDetails']['AuthCode']) : null) . '\',
-                                                        \'' . (isset($response['resultDetails']['AcquirerCode']) ? str_replace("'","\'",$response['resultDetails']['AcquirerCode']) : null). '\',
-                                                        \'' . (isset($response['resultDetails']['BatchNo']) ? str_replace("'","\'",$response['resultDetails']['BatchNo']) : null) . '\',
-                                                        \'' . (isset($response['resultDetails']['Interest']) ? str_replace("'","\'",str_replace(',','',$response['resultDetails']['Interest'])) : null) . '\',
-                                                        \'' . (isset($response['resultDetails']['TotalAmount']) ? str_replace("'","\'",str_replace(',','',$response['resultDetails']['TotalAmount'])) : null). '\',
-                                                        \'' . (isset($response['resultDetails']['ReferenceNo']) ? str_replace("'","\'",$response['resultDetails']['ReferenceNo']) : null) . '\',
-                                                        \'' . (isset($response['card']['bin']) ? str_replace("'","\'",$response['card']['bin']) : null). '\',
-                                                        \'' . (isset($response['card']['last4Digits']) ? str_replace("'","\'",$response['card']['last4Digits']) : null) . '\',
-                                                        \'' . (isset($response['customer']['email']) ? str_replace("'","\'",$response['customer']['email']) : null) . '\',
-                                                        \'' . (isset($response['customParameters']['SHOPPER_MID']) ? str_replace("'","\'",$response['customParameters']['SHOPPER_MID']) : null) . '\',
-                                                        \'' . (isset($response['customParameters']['SHOPPER_TID']) ? str_replace("'","\'",$response['customParameters']['SHOPPER_TID']) : null). '\',
-                                                        \'' . (isset($response['timestamp']) ? str_replace("'","\'",$response['timestamp']) : null) . '\', 
-                                                        \'' . str_replace("'","\'",json_encode($response,true)) . '\',
+                                                     VALUES (
+                                                        \'' . pSQL($response['customer']['merchantCustomerId'] ?? '') . '\',
+                                                        \'' . pSQL($response['id'] ?? '') . '\',
+                                                        \'' . pSQL($response['paymentType'] ?? '') . '\',
+                                                        \'' . pSQL($response['paymentBrand'] ?? '') . '\',
+                                                        \'' . pSQL(str_replace(',', '', $response['amount'] ?? '')) . '\',
+                                                        \'' . pSQL($response['merchantTransactionId'] ?? '') . '\',
+                                                        \'' . pSQL($response['result']['code'] ?? '') . '\',
+                                                        \'' . pSQL($response['result']['description'] ?? '') . '\',
+                                                        \'' . pSQL($response['resultDetails']['ExtendedDescription'] ?? '') . '\',
+                                                        \'' . pSQL($response['resultDetails']['AcquirerResponse'] ?? '') . '\',
+                                                        \'' . pSQL($response['resultDetails']['response'] ?? '') . '\',
+                                                        \'' . pSQL($response['resultDetails']['AuthCode'] ?? '') . '\',
+                                                        \'' . pSQL($response['resultDetails']['AcquirerCode'] ?? '') . '\',
+                                                        \'' . pSQL($response['resultDetails']['BatchNo'] ?? '') . '\',
+                                                        \'' . pSQL(str_replace(',', '', $response['resultDetails']['Interest'] ?? '')) . '\',
+                                                        \'' . pSQL(str_replace(',', '', $response['resultDetails']['TotalAmount'] ?? '')) . '\',
+                                                        \'' . pSQL($response['resultDetails']['ReferenceNo'] ?? '') . '\',
+                                                        \'' . pSQL($response['card']['bin'] ?? '') . '\',
+                                                        \'' . pSQL($response['card']['last4Digits'] ?? '') . '\',
+                                                        \'' . pSQL($response['customer']['email'] ?? '') . '\',
+                                                        \'' . pSQL($response['customParameters']['SHOPPER_MID'] ?? '') . '\',
+                                                        \'' . pSQL($response['customParameters']['SHOPPER_TID'] ?? '') . '\',
+                                                        \'' . pSQL($response['timestamp'] ?? '') . '\',
+                                                        \'' . pSQL(json_encode($response, true)) . '\',
                                                         \'' . ((isset($response['result']['code']) &&
                                                         ($response['result']['code'] == "000.000.000" ||
                                                         $response['result']['code'] == "000.200.100" ||
@@ -1070,6 +1072,7 @@ class datafast extends PaymentModule
             'DATAFAST_TID' => Configuration::get('DATAFAST_TID', null),
             'DATAFAST_RISK' => Configuration::get('DATAFAST_RISK', null),
             'DATAFAST_PROVEEDOR' => Configuration::get('DATAFAST_PROVEEDOR', null),
+            'DATAFAST_ECI' => Configuration::get('DATAFAST_ECI', null),
             'DATAFAST_PREFIJOTRX' => Configuration::get('DATAFAST_PREFIJOTRX', null),
 			'DATAFAST_CUSTOMERTOKEN' => Configuration::get('DATAFAST_CUSTOMERTOKEN', null),
             'DATAFAST_STYLE' => Configuration::get('DATAFAST_STYLE', null),
@@ -1191,9 +1194,17 @@ class datafast extends PaymentModule
 									array(
 										'col' => 3,
 										'type' => 'text',
-										'desc' => $this->l('Ingrese el valor de PROVEEDOR'),
+										'desc' => $this->l('Ingrese el valor de PROVEEDOR (SHOPPER_PSERV)'),
 										'name' => 'DATAFAST_PROVEEDOR',
 										'label' => $this->l('PROVEEDOR'),
+									)
+									,
+									array(
+										'col' => 3,
+										'type' => 'text',
+										'desc' => $this->l('Ingrese el valor de ECI (SHOPPER_ECI)'),
+										'name' => 'DATAFAST_ECI',
+										'label' => $this->l('ECI'),
 									)
 									,
 									array(
@@ -1822,6 +1833,7 @@ class datafast extends PaymentModule
 		$data['DATAFAST_TID']=Configuration::get('DATAFAST_TID', null);
 		$data['DATAFAST_RISK']=Configuration::get('DATAFAST_RISK', null);
         $data['DATAFAST_PROVEEDOR']=Configuration::get('DATAFAST_PROVEEDOR', null);
+        $data['DATAFAST_ECI']=Configuration::get('DATAFAST_ECI', null);
         $data['DATAFAST_PREFIJOTRX']=Configuration::get('DATAFAST_PREFIJOTRX', null);
 		$data['DATAFAST_CUSTOMERTOKEN']=Configuration::get('DATAFAST_CUSTOMERTOKEN', null);
         $data['DATAFAST_STYLE']=Configuration::get('DATAFAST_STYLE', null);
@@ -1934,8 +1946,9 @@ class datafast extends PaymentModule
         else 
             $envio_imp =  $envio_subtotal; 
         
-        //obtener razon del descuento con respecto a los subtotales 
-        $razon = $total_discounts/($subtotalIVA0 + $subtotalIVA);  
+        //obtener razon del descuento con respecto a los subtotales
+        $subtotalSum = $subtotalIVA0 + $subtotalIVA;
+        $razon = ($subtotalSum > 0) ? $total_discounts / $subtotalSum : 0;  
 
         //Calculo de descuentos a los subtotales sin envio
         $descuentoIVA = $subtotalIVA * $razon;
@@ -1982,6 +1995,7 @@ class datafast extends PaymentModule
                                                 , 'DATAFAST_TID'
                                                 , 'DATAFAST_RISK'
                                                 , 'DATAFAST_PROVEEDOR'
+                                                , 'DATAFAST_ECI'
                                                 , 'DATAFAST_PREFIJOTRX'
                                                 ,'DATAFAST_CUSTOMERTOKEN'
                                                 ,'DATAFAST_STYLE'
@@ -2070,7 +2084,7 @@ class datafast extends PaymentModule
         $url .= "?entityId=".$config['DATAFAST_ENTITY_ID']; 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization:Bearer 	'.$config['DATAFAST_BEARER_TOKEN']));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization: Bearer '.$config['DATAFAST_BEARER_TOKEN']));
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');  
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verifyPeer); // this should be set to true in production
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

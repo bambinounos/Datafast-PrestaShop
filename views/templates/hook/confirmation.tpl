@@ -9,19 +9,19 @@
                 <tbody>
                 <tr>
                     <td>{l s='Tarjeta' mod='datafast'}&nbsp;</td>
-                    <td>&nbsp;{$datafastBrand}</td>
+                    <td>&nbsp;{$datafastBrand|escape:'html':'UTF-8'}</td>
                 </tr>
                 <tr>
                     <td>{l s='Nombre' mod='datafast'}&nbsp;</td>
-                    <td>&nbsp;{$datafastCardHolder}</td>
+                    <td>&nbsp;{$datafastCardHolder|escape:'html':'UTF-8'}</td>
                 </tr>
                 <tr>
                     <td>{l s='Monto' mod='datafast'}&nbsp;</td>
-                    <td>&nbsp;{$datafastAmount}</td>
+                    <td>&nbsp;{$datafastAmount|escape:'html':'UTF-8'}</td>
                 </tr>
                 <tr>
                     <td>{l s='Autorización' mod='datafast'}&nbsp;</td>
-                    <td>&nbsp;{$datafastAuth}</td>
+                    <td>&nbsp;{$datafastAuth|escape:'html':'UTF-8'}</td>
                 </tr>
 
                 </tbody>

@@ -77,12 +77,7 @@ class PaymentService
 
     private function getAuth(DatafastRequest $datafastRequest): string
     {
-        return "Authorization: Bearer 	" . $datafastRequest->getBearerToken();
-    }
-
-    private function getAuthRefund(DatafastRequestRefund $datafastRequest): string
-    {
-        return "Authorization: Bearer 	" . $datafastRequest->getBearerToken();
+        return "Authorization: Bearer " . $datafastRequest->getBearerToken();
     }
 
     /**
@@ -122,6 +117,7 @@ class PaymentService
 
                 'customParameters[SHOPPER_MID]'=> $datafastRequest->getMid(),
                 'customParameters[SHOPPER_TID]'=> $datafastRequest->getTid(),
+                'customParameters[SHOPPER_ECI]'=>$datafastRequest->getEci(),
                 'customParameters[SHOPPER_PSERV]'=>$datafastRequest->getProveedor(),
 
                 'customParameters[SHOPPER_VAL_BASE0]'=> $amount->getSubtotalIVA0(),
@@ -169,8 +165,7 @@ class PaymentService
                 $productCount++;
             }
         }
-        //return $body;
-        return [];
+        return $body;
     }
 
 

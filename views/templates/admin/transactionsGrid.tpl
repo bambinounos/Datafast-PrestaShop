@@ -1,30 +1,30 @@
-    <form method="POST" action="?controller={$smarty.get.controller}&configure={$smarty.get.configure}&token={$smarty.get.token}&viewTransactions">
+    <form method="POST" action="?controller={$smarty.get.controller|escape:'html':'UTF-8'}&configure={$smarty.get.configure|escape:'html':'UTF-8'}&token={$smarty.get.token|escape:'html':'UTF-8'}&viewTransactions">
         <div class="panel" id="fieldset_0">
             <div class="panel-heading">
                 <i class="icon-eye"></i> Consulta de Transacciones
-            </div>                   
-                <input type="hidden" name="subaction" value="viewData" />                
+            </div>
+                <input type="hidden" name="subaction" value="viewData" />
                 <table>
                     <tr>
                         <td style="width: 80px; text-align: center;">Año</td>
                         <td style="width: 150px">
                             <select name='year'>
-                               {$allYearOptions}
+                               {$allYearOptions nofilter}
                             </select>
                         </td>
                         <td style="width: 80px; text-align: center;">Mes</td>
                         <td style="width: 150px">
                             <select name='month'>
-                               {$allMonthOptions}
+                               {$allMonthOptions nofilter}
                             </select>
                         </td>
 						<td style="width: 80px; text-align: center;">Orden</td>
                         <td style="width: 150px">
-                            <input name="txtOrden" id="txtOrden" class="form-control" value="{$txtOrden}">
+                            <input name="txtOrden" id="txtOrden" class="form-control" value="{$txtOrden|escape:'html':'UTF-8'}">
                         </td>
 						<td style="width: 80px; text-align: center;">Id Trx</td>
                         <td style="width: 150px">
-                            <input name="txtIdTrx" id="txtIdTrx" class="form-control" value="{$txtIdTrx}">
+                            <input name="txtIdTrx" id="txtIdTrx" class="form-control" value="{$txtIdTrx|escape:'html':'UTF-8'}">
                             </select>
                         </td>
                         <td class="actions" style="padding-left: 20px">
@@ -63,31 +63,31 @@
 				<tbody>
 				 {section name=co loop=$data}
 				 							<tr class=" odd">
-                                            		<td>{$data[co].id_transaction}</td>
-													<td>{$data[co].cart_id}</td>
-													<td>{$data[co].updated_at}</td>
-													<td>{$data[co].payment_type}</td>
-													<td>{$data[co].transaction_id}</td>
-													<td>{$data[co].result_code}</td>
-													<td>{$data[co].response}</td>
-													<td>{$data[co].extended_description}</td>
-													<td>{$data[co].batch_no}</td>
-													<td>{$data[co].reference_no}</td>
-													<td>{$data[co].acquirer_code}</td>
-													<td>{$data[co].auth_code}</td>
-													<td>{$data[co].amount}</td>
-													<td>{$data[co].interest}</td>
-													<td>{$data[co].total_amount}</td>
-													<td>{$data[co].status_name}</td>
+                                            		<td>{$data[co].id_transaction|escape:'html':'UTF-8'}</td>
+													<td>{$data[co].cart_id|escape:'html':'UTF-8'}</td>
+													<td>{$data[co].updated_at|escape:'html':'UTF-8'}</td>
+													<td>{$data[co].payment_type|escape:'html':'UTF-8'}</td>
+													<td>{$data[co].transaction_id|escape:'html':'UTF-8'}</td>
+													<td>{$data[co].result_code|escape:'html':'UTF-8'}</td>
+													<td>{$data[co].response|escape:'html':'UTF-8'}</td>
+													<td>{$data[co].extended_description|escape:'html':'UTF-8'}</td>
+													<td>{$data[co].batch_no|escape:'html':'UTF-8'}</td>
+													<td>{$data[co].reference_no|escape:'html':'UTF-8'}</td>
+													<td>{$data[co].acquirer_code|escape:'html':'UTF-8'}</td>
+													<td>{$data[co].auth_code|escape:'html':'UTF-8'}</td>
+													<td>{$data[co].amount|escape:'html':'UTF-8'}</td>
+													<td>{$data[co].interest|escape:'html':'UTF-8'}</td>
+													<td>{$data[co].total_amount|escape:'html':'UTF-8'}</td>
+													<td>{$data[co].status_name|escape:'html':'UTF-8'}</td>
 													<td class="text-right">
-														<div class="btn-group-action">			
+														<div class="btn-group-action">
 															<div class="btn-group pull-right">
-																	<a href="{$data[co].href_detail}" class="btn btn-default" title="Ver">
+																	<a href="{$data[co].href_detail|escape:'html':'UTF-8'}" class="btn btn-default" title="Ver">
 																	<i class="icon-search-plus"></i> Ver
 																	</a>
 
 															</div>
-														</div>					
+														</div>
 													</td>
 											</tr>
                 {/section}
@@ -95,11 +95,11 @@
 				</table>
                 </div>
 				<br/>
-                       
+
                 <div class="panel-footer">
-				<a href="{$href_return}" class="btn btn-default">
+				<a href="{$href_return|escape:'html':'UTF-8'}" class="btn btn-default">
 				<i class="process-icon-back"></i> Regresar</a>
                 </div>
             </div>
-				
+
         </form>

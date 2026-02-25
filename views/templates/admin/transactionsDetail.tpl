@@ -1,7 +1,7 @@
 <style>
 td {
-  white-space: normal !important; 
-  word-wrap: break-word;  
+  white-space: normal !important;
+  word-wrap: break-word;
 }
 table {
   table-layout: fixed;
@@ -11,16 +11,16 @@ table {
 <div class="container">
 <div class="row">
 		<div class="col-md-12">
-{$messagerefundDatafast}
+{$messagerefundDatafast nofilter}
 </div>
 	<div class="row">
 		<div class="col-md-12">
 		<div class="panel">
 			<h3>
-				DETALLE DE TRANSACCIÓN 
+				DETALLE DE TRANSACCIÓN
 					{if $payment_type == 'DB'}
 						{if $status == '1'}
-							<a href="{$href_refund}" class="btn btn-danger">Reversar</a>
+							<a href="{$href_refund|escape:'html':'UTF-8'}" class="btn btn-danger">Reversar</a>
 						{/if}
 						{if $status == '2'}
 							<a class="btn btn-info">Reversado</a>
@@ -31,63 +31,63 @@ table {
 			<tbody>
 				<tr>
 					<td>Orden:</td>
-					<td>{$cart_id}</td>
+					<td>{$cart_id|escape:'html':'UTF-8'}</td>
 				</tr>
 				<tr>
 					<td>Fecha Ejecución:</td>
-					<td>{$updated_at}</td>
+					<td>{$updated_at|escape:'html':'UTF-8'}</td>
 				</tr>
 				<tr>
 					<td>Id Transacción:</td>
-					<td>{$transaction_id}</td>
+					<td>{$transaction_id|escape:'html':'UTF-8'}</td>
 				</tr>
 				<tr>
 					<td>Tipo Transacción:</td>
-					<td>{$payment_type}</td>
+					<td>{$payment_type|escape:'html':'UTF-8'}</td>
 				</tr>
 				<tr>
 					<td>Monto:</td>
-					<td>{$amount}</td>
+					<td>{$amount|escape:'html':'UTF-8'}</td>
 				</tr>
 				<tr>
 					<td>Respuesta Botón:</td>
-					<td>{$result_code}</td>
+					<td>{$result_code|escape:'html':'UTF-8'}</td>
 				</tr>
 				<tr>
 					<td>Respuesta Banco:</td>
-					<td>{$response}</td>
+					<td>{$response|escape:'html':'UTF-8'}</td>
 				</tr>
 				<tr>
 					<td>Descripción de Respuesta:</td>
-					<td>{$extended_description}</td>
+					<td>{$extended_description|escape:'html':'UTF-8'}</td>
 				</tr>
 				<tr>
 					<td>Lote:</td>
-					<td>{$batch_no}</td>
+					<td>{$batch_no|escape:'html':'UTF-8'}</td>
 				</tr>
 				<tr>
 					<td>Referencia:</td>
-					<td>{$reference_no}</td>
+					<td>{$reference_no|escape:'html':'UTF-8'}</td>
 				</tr>
 				<tr>
 					<td>Adquirente:</td>
-					<td>{$acquirer_code}</td>
+					<td>{$acquirer_code|escape:'html':'UTF-8'}</td>
 				</tr>
 				<tr>
 					<td>Autorización:</td>
-					<td>{$auth_code}</td>
+					<td>{$auth_code|escape:'html':'UTF-8'}</td>
 				</tr>
 				<tr>
 					<td>Monto Total:</td>
-					<td>{$total_amount}</td>
+					<td>{$total_amount|escape:'html':'UTF-8'}</td>
 				</tr>
 				<tr>
 					<td>Interés:</td>
-					<td>{$interest}</td>
+					<td>{$interest|escape:'html':'UTF-8'}</td>
 				</tr>
 				<tr>
 					<td>Trama Completa:</td>
-					<td>{$response_json}</td>
+					<td>{$response_json|escape:'html':'UTF-8'}</td>
 				</tr>
 				</tbody>
 			</table>
@@ -97,12 +97,12 @@ table {
 					display: none !important;
 				}
 				</style>
-				  	
+
 				<br><br><br>
-				<a href="{$href_return}" class="btn btn-default">
+				<a href="{$href_return|escape:'html':'UTF-8'}" class="btn btn-default">
 				<i class="process-icon-back"></i> Regresar</a>
 			</footer>
-		
+
 		</div>
   	</div>
 	</div>

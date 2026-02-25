@@ -33,6 +33,7 @@ class Config
         $request->setTid((string)($data['DATAFAST_TID'] ?? ''));
 		$request->setRisk((string)($data['DATAFAST_RISK'] ?? ''));
         $request->setProveedor((string)($data['DATAFAST_PROVEEDOR'] ?? ''));
+		$request->setEci((string)($data['DATAFAST_ECI'] ?? ''));
 		$request->setPrefijoTrx((string)($data['DATAFAST_PREFIJOTRX'] ?? ''));
 
         $request->setCheckoutScript($url . 'paymentWidgets.js?checkoutId=');

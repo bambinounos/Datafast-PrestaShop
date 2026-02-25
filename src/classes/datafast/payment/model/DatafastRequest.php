@@ -22,6 +22,7 @@ class DatafastRequest
     private $resourcePathUri;
     private $resourcePathUriRefund;
     private $proveedor;
+    private $eci;
     private $transaction_id;
     private $amount;
 
@@ -203,6 +204,21 @@ class DatafastRequest
         $this->proveedor = $proveedor;
     }
 
+    /**
+     * @return string
+     */
+    public function getEci(): string
+    {
+        return $this->eci;
+    }
+
+    /**
+     * @param string $eci
+     */
+    public function setEci(?string $eci): void
+    {
+        $this->eci = $eci;
+    }
 
     /**
      * @return string

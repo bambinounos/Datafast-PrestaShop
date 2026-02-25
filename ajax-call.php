@@ -4,16 +4,16 @@ use datafast\payment\model\Environment;
 require_once(dirname(__FILE__).'/../../config/config.inc.php');
 require_once(dirname(__FILE__).'/../../init.php');
 
-$token = $_GET["token"];
-if (!isset($token)) 
+if (!isset($_GET["token"]))
 {
       return false;
-} 
+}
+$token = pSQL($_GET["token"]);
 
 $sqlCount = 'SELECT COUNT(tkn.id)    AS CountToken
 			FROM `' . _DB_PREFIX_ . 'datafast_customertoken` tkn
 			WHERE tkn.`token` = \'' .$token . '\'';
-			$countToken = Db::getInstance()->executeS($sqlCount);  
+			$countToken = Db::getInstance()->executeS($sqlCount);
 				$countTkn = $countToken[0]['CountToken'];
 if ($countTkn > 0)
 {
@@ -31,7 +31,7 @@ if ($countTkn > 0)
 		$sqlUpdate = "UPDATE  " . _DB_PREFIX_ . "datafast_customertoken
 		SET		STATUS 	= 2
 		WHERE	STATUS 	= 1
-		AND 	TOKEN	= '". $token . "'";
+		AND 	TOKEN	= '". pSQL($token) . "'";
 		$exUpdate = Db::getInstance()->executeS($sqlUpdate);   
 		echo "true";
 	}
@@ -72,7 +72,7 @@ function deleteCardRequest($token)
     $ch = curl_init();
 	 
     curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization:Bearer 	'.$bearer));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization: Bearer '.$bearer));
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');  
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verifyPeer);  
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
