@@ -61,10 +61,24 @@ class datafast extends PaymentModule
 
 
         $this->bootstrap = true;
+        $this->repairHooksIfMissing();
         $this->checkIfConfigurationIsProvided();
         $this->checkForCurrency();
         $this->checkForLogsFolder();
 
+    }
+
+    private function repairHooksIfMissing(): void
+    {
+        if (!$this->id) {
+            return;
+        }
+        $requiredHooks = ['paymentOptions', 'paymentReturn', 'displayHeader', 'actionOrderStatusUpdate'];
+        foreach ($requiredHooks as $hookName) {
+            if (!$this->isRegisteredInHook($hookName)) {
+                $this->registerHook($hookName);
+            }
+        }
     }
 
     public function checkIfConfigurationIsProvided(): void
