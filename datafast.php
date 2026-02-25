@@ -1537,25 +1537,25 @@ class datafast extends PaymentModule
 
         if ($transactions) {
             foreach ($transactions as $row) {
-                $data[$idxTrx]['id_transaction'] =$row['id_transaction'];     
-                $data[$idxTrx]['cart_id'] =$row['cart_id'];     
-                $data[$idxTrx]['updated_at'] =$row['updated_at'];     
-                $data[$idxTrx]['checkout_id'] =$row['checkout_id'];   
-                $data[$idxTrx]['payment_type'] =$row['payment_type'];   
-                $data[$idxTrx]['amount'] =$row['amount'];     
-                $data[$idxTrx]['result_code'] =$row['result_code'];     
-                $data[$idxTrx]['result_description'] =$row['result_description'];     
-                $data[$idxTrx]['extended_description'] =$row['extended_description'];     
-                $data[$idxTrx]['auth_code'] =$row['auth_code'];     
-                $data[$idxTrx]['batch_no'] =$row['batch_no'];     
-                $data[$idxTrx]['reference_no'] =$row['reference_no'];     
-                $data[$idxTrx]['interest'] =$row['interest'];     
-                $data[$idxTrx]['total_amount'] =$row['total_amount'];     
-                $data[$idxTrx]['payment_type'] =$row['payment_type'];     
-                $data[$idxTrx]['transaction_id'] =$row['transaction_id'];     
-                $data[$idxTrx]['response'] =$row['response'];     
-                $data[$idxTrx]['status'] =$row['status'];     
-                $data[$idxTrx]['status_name'] =$row['status_name'];   
+                $data[$idxTrx]['id_transaction'] = $row['id_transaction'] ?? '';
+                $data[$idxTrx]['cart_id'] = $row['cart_id'] ?? '';
+                $data[$idxTrx]['updated_at'] = $row['updated_at'] ?? '';
+                $data[$idxTrx]['checkout_id'] = $row['checkout_id'] ?? '';
+                $data[$idxTrx]['payment_type'] = $row['payment_type'] ?? '';
+                $data[$idxTrx]['amount'] = $row['amount'] ?? '';
+                $data[$idxTrx]['result_code'] = $row['result_code'] ?? '';
+                $data[$idxTrx]['result_description'] = $row['result_description'] ?? '';
+                $data[$idxTrx]['extended_description'] = $row['extended_description'] ?? '';
+                $data[$idxTrx]['auth_code'] = $row['auth_code'] ?? '';
+                $data[$idxTrx]['batch_no'] = $row['batch_no'] ?? '';
+                $data[$idxTrx]['reference_no'] = $row['reference_no'] ?? '';
+                $data[$idxTrx]['acquirer_code'] = $row['acquirer_code'] ?? '';
+                $data[$idxTrx]['interest'] = $row['interest'] ?? '';
+                $data[$idxTrx]['total_amount'] = $row['total_amount'] ?? '';
+                $data[$idxTrx]['transaction_id'] = $row['transaction_id'] ?? '';
+                $data[$idxTrx]['response'] = $row['response'] ?? '';
+                $data[$idxTrx]['status'] = $row['status'] ?? '';
+                $data[$idxTrx]['status_name'] = $row['status_name'] ?? '';   
                 $data[$idxTrx]['href_detail']  = AdminController::$currentIndex . '&configure=' . $this->name.'&viewDetailsTransaction&token=' .Tools::getAdminTokenLite('AdminModules')."&id_transaction=".$row['id_transaction'];    
                 $idxTrx++;
             }
