@@ -61,7 +61,11 @@ class datafast extends PaymentModule
 
 
         $this->bootstrap = true;
-        $this->repairHooksIfMissing();
+        try {
+            $this->repairHooksIfMissing();
+        } catch (\Throwable $e) {
+            // Silenciar errores de reparación de hooks durante carga
+        }
         $this->checkIfConfigurationIsProvided();
         $this->checkForCurrency();
         $this->checkForLogsFolder();
@@ -374,6 +378,8 @@ class datafast extends PaymentModule
 
     public function getContent()
     {
+        $this->repairHooksIfMissing();
+
         /**
          * If values have been submitted in the form, process.
          */
