@@ -33,10 +33,40 @@ Módulo de pagos de **Datafast** para PrestaShop. Permite procesar pagos con tar
 - **MID**: Merchant ID
 - **TID**: Terminal ID
 - **RISK**: Parámetro de riesgo
-- **PROVEEDOR**: Identificador de proveedor
+- **PROVEEDOR**: Identificador de proveedor (SHOPPER_PSERV)
+- **ECI**: Valor de seguridad ECI (SHOPPER_ECI)
 - **PREFIJO TRX**: Prefijo para identificar transacciones
 
 ## Changelog
+
+### v2.1.0 (2026-02-25)
+Auditoría de seguridad y compatibilidad con la documentación oficial de la API de Datafast.
+
+#### Seguridad — SQL Injection
+- Reemplazados todos los `str_replace("'","\'")` por `pSQL()` en queries SQL
+- Protegido `$_GET["token"]` en `ajax-call.php` con `pSQL()`
+- Protegido `$_POST['trxs']` en recuperación de transacciones con `pSQL()`
+- Agregado `(int)` cast en IDs numéricos (`$id_transaction`, `$cart_id`) en queries UPDATE/INSERT
+- Protegidos `$registrationId` y `$customer_id` con `pSQL()` en `result.php`
+- Protegido `$this->name` con `pSQL()` y campos numéricos con `(int)` en `DatafastInstallments.php`
+
+#### Seguridad — XSS
+- Escapadas todas las variables de datos en templates Smarty con `|escape:'html':'UTF-8'`
+- `confirmation.tpl`: Escapados `datafastBrand`, `datafastCardHolder`, `datafastAmount`, `datafastAuth` (datos de API visibles al cliente)
+- `transactionsDetail.tpl`: Escapadas todas las variables de detalle de transacción
+- `transactionsGrid.tpl`: Escapados inputs de búsqueda (`txtOrden`, `txtIdTrx`) y datos de tabla
+- `error.tpl`: Escapado `{$error_msg}`
+- Protegido `$refund_ExtendedDescription` con `htmlspecialchars()` en mensajes HTML dinámicos
+
+#### Compatibilidad Datafast API
+- **Fix crítico**: Corregido header `Authorization: Bearer` que contenía un TAB (`\t`) en lugar de espacio, violando RFC 6750. Afectaba `PaymentService.php`, `ajax-call.php`, `datafast.php` y `api/ajax-test-call.php`
+- **Nuevo parámetro**: Agregado `customParameters[SHOPPER_ECI]` al request de checkout, requerido por la documentación de Datafast como valor de seguridad fijo. Incluye campo configurable `ECI` en el panel de administración
+- **Cart items habilitados**: Reactivado el envío de items del carrito (`cart.items[n].name`, `description`, `price`, `quantity`) en el request de checkout. Estaba deshabilitado (`return []` en `addItemsToBody()`)
+- **División por cero**: Protegido el cálculo de proporción de descuento (`$razon`) cuando los subtotales (`$subtotalIVA + $subtotalIVA0`) son 0
+
+#### Limpieza de código
+- Eliminado método muerto `getAuthRefund()` en `PaymentService.php`
+- Removidos todos los `str_replace("'","\'")` residuales en `result.php`
 
 ### v2.0.0 (2026-02-24)
 Actualización de compatibilidad para PHP 8.1+ y PrestaShop 9.x.
