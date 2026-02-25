@@ -61,28 +61,10 @@ class datafast extends PaymentModule
 
 
         $this->bootstrap = true;
-        try {
-            $this->repairHooksIfMissing();
-        } catch (\Throwable $e) {
-            // Silenciar errores de reparación de hooks durante carga
-        }
         $this->checkIfConfigurationIsProvided();
         $this->checkForCurrency();
         $this->checkForLogsFolder();
 
-    }
-
-    private function repairHooksIfMissing(): void
-    {
-        if (!$this->id) {
-            return;
-        }
-        $requiredHooks = ['paymentOptions', 'paymentReturn', 'displayHeader', 'actionOrderStatusUpdate'];
-        foreach ($requiredHooks as $hookName) {
-            if (!$this->isRegisteredInHook($hookName)) {
-                $this->registerHook($hookName);
-            }
-        }
     }
 
     public function checkIfConfigurationIsProvided(): void
@@ -378,8 +360,6 @@ class datafast extends PaymentModule
 
     public function getContent()
     {
-        $this->repairHooksIfMissing();
-
         /**
          * If values have been submitted in the form, process.
          */
