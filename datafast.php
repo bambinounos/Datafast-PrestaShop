@@ -122,7 +122,7 @@ class datafast extends PaymentModule
             $this->_errors[] = $this->l('You have to enable the cURL extension on your server to install this module');
             return false;
         }
-        Configuration::updateValue('DATAFAST_VERSION', "2.0.0");
+        Configuration::updateValue('DATAFAST_VERSION', $this->version);
         Configuration::updateValue('DATAFAST_DEV', true);
 
         PrestaShopLogger::addLog('Instalación de módulo de pagos de Datafast', 2);
@@ -1079,7 +1079,7 @@ class datafast extends PaymentModule
             'DATAFAST_CVV' => Configuration::get('DATAFAST_CVV', null),
             'DATAFAST_PRODULR' => Configuration::get('DATAFAST_PRODULR', null),
             'DATAFAST_DEVURL' => Configuration::get('DATAFAST_DEVURL', null),
-            'DATAFAST_VERSION' => Configuration::get('DATAFAST_VERSION', null)
+            'DATAFAST_VERSION' => $this->version
         );
     }
 
