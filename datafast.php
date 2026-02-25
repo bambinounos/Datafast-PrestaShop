@@ -1741,9 +1741,14 @@ class datafast extends PaymentModule
     public function hookPaymentOptions($params)
     {
         try {
+            $this->logError("[DEBUG-HOOK] hookPaymentOptions INICIO");
+
             $payment = new Payment();
 
             $request = $this->getDatafastRequest();
+            $this->logError("[DEBUG-HOOK] URL: " . $request->getUrlRequest());
+            $this->logError("[DEBUG-HOOK] EntityId: " . ($request->getEntityId() ? 'SET' : 'EMPTY'));
+            $this->logError("[DEBUG-HOOK] Bearer: " . ($request->getBearerToken() ? 'SET' : 'EMPTY'));
 
             $productInfo[] = $this->getProductInfo();
             $customerInfo = $this->getCustomerInfo();
@@ -1759,13 +1764,16 @@ class datafast extends PaymentModule
             $payment->setAmount($amount);
             $payment->setRequest($request);
 
+            $this->logError("[DEBUG-HOOK] Payment object built, calling requestCheckoutId...");
 
             $paymentService = new PaymentService();
 
             $checkOutId = $paymentService->requestCheckoutId($payment);
 
+            $this->logError("[DEBUG-HOOK] checkOutId result: '" . $checkOutId . "'");
+
             if (empty($checkOutId)) {
-                $this->logError("No se pudo obtener checkoutId de Datafast.");
+                $this->logError("[DEBUG-HOOK] checkoutId VACIO - payment option NO se mostrará");
                 return [];
             }
 
@@ -1840,13 +1848,15 @@ class datafast extends PaymentModule
                 ->setCallToActionText($this->trans('Pago con Datafast', array(), 'Pago con Datafast'))
                 ->setAction($action)
                 ->setAdditionalInformation($setAdditionalInformation);
+
+            $this->logError("[DEBUG-HOOK] PaymentOption CREADO, retornando opción de pago");
             return [$newOption];
 
         } catch (\Exception $e) {
-            $this->logError("Error al mostrar opción de pago Datafast: " . $e->getMessage());
+            $this->logError("[DEBUG-HOOK] EXCEPTION: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine());
             return [];
         } catch (\Error $e) {
-            $this->logError("Error fatal al mostrar opción de pago Datafast: " . $e->getMessage());
+            $this->logError("[DEBUG-HOOK] ERROR FATAL: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine());
             return [];
         }
     }
