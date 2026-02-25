@@ -18,7 +18,6 @@ class DatafastInstallments extends ObjectModel
     public static $definition = [
         'table' => 'datafast_installments',
         'primary' => 'id_installment',
-        'multilang' => true,
         'fields' => [
             'name' => ['type' => self::TYPE_STRING],
             'id_termtype' => ['type' => self::TYPE_INT],
