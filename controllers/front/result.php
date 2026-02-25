@@ -63,7 +63,7 @@ class datafastResultModuleFrontController extends ModuleFrontController
             $checkOutId = Tools::getValue('id');
             $resourcePathUri = str_replace("{id}", $checkOutId, $request->getResourcePathUri());
 
-            $this->getLogger()->debug("resourcePathUri--->" . $resourcePathUri);
+            $this->safeLog('debug',"resourcePathUri--->" . $resourcePathUri);
             $request->setResourcePathUri($resourcePathUri);
 
 			$paymentResp = $paymentService->processPayment($request);
@@ -72,7 +72,7 @@ class datafastResultModuleFrontController extends ModuleFrontController
             $objResponse = json_decode($paymentResp, true);
 
             if (!is_array($objResponse) || !isset($objResponse['result']['code'])) {
-                $this->getLogger()->error("Respuesta inválida de Datafast. Response: " . ($paymentResp ?: '(vacío)'));
+                $this->safeLog('error',"Respuesta inválida de Datafast. Response: " . ($paymentResp ?: '(vacío)'));
                 $errorMsg = 'No se pudo obtener una respuesta válida del servidor de pagos. Por favor intente nuevamente.';
                 Context::getContext()->cookie->errorMessage = $errorMsg;
                 Tools::redirect(Context::getContext()->link->getModuleLink('datafast', 'error', array()));
@@ -102,7 +102,7 @@ class datafastResultModuleFrontController extends ModuleFrontController
                 $objResponseRefund = json_decode($refundResp, true);
 
                 if (!is_array($objResponseRefund)) {
-                    $this->getLogger()->error("Respuesta inválida en refund. Response: " . ($refundResp ?: '(vacío)'));
+                    $this->safeLog('error',"Respuesta inválida en refund. Response: " . ($refundResp ?: '(vacío)'));
                     $objResponseRefund = [];
                 }
 
@@ -228,18 +228,18 @@ class datafastResultModuleFrontController extends ModuleFrontController
             } else {
 
                 $logInfo = "Error en el pago  de:  " . $total . ", customer id: " . $customer->id . " cart id: " . $cart->id . " order id" . $this->module->currentOrder . " Detalle: " . $datafastExtendedDescripcion;
-                $this->getLogger()->info($logInfo);
+                $this->safeLog('info',$logInfo);
 
                 Context::getContext()->cookie->errorMessage = $datafastExtendedDescripcion;
                 Tools::redirect(Context::getContext()->link->getModuleLink('datafast', 'error', array()));
             }
 
         } catch (\Exception $e) {
-            $this->getLogger()->error("Error crítico en el proceso de pago: " . $e->getMessage(), $e->getTrace());
+            $this->safeLog('error',"Error crítico en el proceso de pago: " . $e->getMessage(), $e->getTrace());
             Context::getContext()->cookie->errorMessage = 'Ocurrió un error inesperado al procesar su pago. Por favor intente nuevamente.';
             Tools::redirect(Context::getContext()->link->getModuleLink('datafast', 'error', array()));
         } catch (\Error $e) {
-            $this->getLogger()->error("Error fatal en el proceso de pago: " . $e->getMessage(), $e->getTrace());
+            $this->safeLog('error',"Error fatal en el proceso de pago: " . $e->getMessage(), $e->getTrace());
             Context::getContext()->cookie->errorMessage = 'Ocurrió un error inesperado al procesar su pago. Por favor intente nuevamente.';
             Tools::redirect(Context::getContext()->link->getModuleLink('datafast', 'error', array()));
         }
@@ -276,11 +276,32 @@ class datafastResultModuleFrontController extends ModuleFrontController
     /**
      * @return Logger
      */
-    private function getLogger(): Logger
+    private function getLogger(): ?Logger
     {
-        $logger = new Logger('PaymentFrontController');
-        $logger->pushHandler(new StreamHandler(Constants::LOGGER_FILE, Logger::DEBUG));
-        return $logger;
+        try {
+            $logFolder = Constants::LOGGER_FOLDER;
+            if (!file_exists($logFolder)) {
+                mkdir($logFolder, 0777, true);
+            }
+            $logger = new Logger('PaymentFrontController');
+            $logger->pushHandler(new StreamHandler(Constants::LOGGER_FILE, Logger::DEBUG));
+            return $logger;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    private function safeLog(string $level, string $message, array $context = []): void
+    {
+        try {
+            $logger = $this->getLogger();
+            if ($logger) {
+                $logger->$level($message, $context);
+            }
+        } catch (\Throwable $e) {
+            // Logger no disponible
+        }
+        \PrestaShopLogger::addLog('[Datafast] ' . $message, $level === 'error' ? 3 : 1);
     }
 
     private function validateTransaction(string $resultCode): bool
@@ -475,7 +496,7 @@ class datafastResultModuleFrontController extends ModuleFrontController
                              )';
             Db::getInstance()->execute($query);
         } catch (\Exception $e) {
-            $this->getLogger()->error("Error al guardar transacción: " . $e->getMessage(), $e->getTrace());
+            $this->safeLog('error',"Error al guardar transacción: " . $e->getMessage(), $e->getTrace());
         }
     }
 

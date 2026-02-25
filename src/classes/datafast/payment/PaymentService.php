@@ -58,7 +58,7 @@ class PaymentService
 			}
 			curl_close($ch);
 
-            $this->getLogger()->debug("Response Body", (array)$response);
+            $this->safeLog('debug', "Response Body", (array)$response);
 
 			$objRequest =  json_decode($response, true);
 			$resultCode = $objRequest["result"]["code"];
@@ -68,7 +68,7 @@ class PaymentService
             }
 
         } catch (\Exception $e) {
-            $this->getLogger()->error("Error trying to get checkoutId.", $e->getTrace());
+            $this->safeLog('error', "Error trying to get checkoutId.", $e->getTrace());
         }
         return $checkoutId;
     }
@@ -202,11 +202,31 @@ class PaymentService
     /**
      * @return Logger
      */
-    private function getLogger(): Logger
+    private function getLogger(): ?Logger
     {
-        $logger = new Logger('PaymentService');
-        $logger->pushHandler(new StreamHandler(Constants::LOGGER_FILE, Logger::DEBUG));
-        return $logger;
+        try {
+            $logFolder = Constants::LOGGER_FOLDER;
+            if (!file_exists($logFolder)) {
+                mkdir($logFolder, 0777, true);
+            }
+            $logger = new Logger('PaymentService');
+            $logger->pushHandler(new StreamHandler(Constants::LOGGER_FILE, Logger::DEBUG));
+            return $logger;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    private function safeLog(string $level, string $message, array $context = []): void
+    {
+        try {
+            $logger = $this->getLogger();
+            if ($logger) {
+                $logger->$level($message, $context);
+            }
+        } catch (\Throwable $e) {
+            // Logger no disponible
+        }
     }
 
     public function processPayment(DatafastRequest $datafastRequest): string
@@ -239,7 +259,7 @@ class PaymentService
 
 			return $response;
         } catch (\Exception $e) {
-            $this->getLogger()->error("Error trying to get checkoutId.", $e->getTrace());
+            $this->safeLog('error', "Error trying to get checkoutId.", $e->getTrace());
             return '';
         }
 
@@ -283,10 +303,10 @@ class PaymentService
 			}
 			curl_close($ch);
 
-            $this->getLogger()->debug("Response Body", (array)$response);
+            $this->safeLog('debug', "Response Body", (array)$response);
 
         } catch (\Exception $e) {
-            $this->getLogger()->error("Error trying to get checkoutId.", $e->getTrace());
+            $this->safeLog('error', "Error trying to get checkoutId.", $e->getTrace());
         }
         return $response;
     }

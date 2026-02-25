@@ -1028,8 +1028,9 @@ class datafast extends PaymentModule
     {
 
         $logger = $this->getLogger();
-
-        $logger->info('Configuración del módulo de Datafast cambiado!');
+        if ($logger) {
+            $logger->info('Configuración del módulo de Datafast cambiado!');
+        }
 
         PrestaShopLogger::addLog('Parámetros del módulo de Datafast modificados', 2);
         $form_values = $this->getConfigFormValues();
@@ -1042,11 +1043,29 @@ class datafast extends PaymentModule
     /**
      * @return Logger
      */
-    private function getLogger(): Logger
+    private function getLogger(): ?Logger
     {
-        $logger = new Logger('Configuration');
-        $logger->pushHandler(new StreamHandler(Constants::LOGGER_FILE, Logger::DEBUG));
-        return $logger;
+        try {
+            $this->checkForLogsFolder();
+            $logger = new Logger('Configuration');
+            $logger->pushHandler(new StreamHandler(Constants::LOGGER_FILE, Logger::DEBUG));
+            return $logger;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    private function logError(string $message): void
+    {
+        try {
+            $logger = $this->getLogger();
+            if ($logger) {
+                $logger->error($message);
+            }
+        } catch (\Throwable $e) {
+            // Monolog falló, ignorar
+        }
+        PrestaShopLogger::addLog('[Datafast] ' . $message, 3);
     }
 
     /**
@@ -1728,7 +1747,7 @@ class datafast extends PaymentModule
             $checkOutId = $paymentService->requestCheckoutId($payment);
 
             if (empty($checkOutId)) {
-                $this->getLogger()->error("No se pudo obtener checkoutId de Datafast.");
+                $this->logError("No se pudo obtener checkoutId de Datafast.");
                 return [];
             }
 
@@ -1806,10 +1825,10 @@ class datafast extends PaymentModule
             return [$newOption];
 
         } catch (\Exception $e) {
-            $this->getLogger()->error("Error al mostrar opción de pago Datafast: " . $e->getMessage());
+            $this->logError("Error al mostrar opción de pago Datafast: " . $e->getMessage());
             return [];
         } catch (\Error $e) {
-            $this->getLogger()->error("Error fatal al mostrar opción de pago Datafast: " . $e->getMessage());
+            $this->logError("Error fatal al mostrar opción de pago Datafast: " . $e->getMessage());
             return [];
         }
     }

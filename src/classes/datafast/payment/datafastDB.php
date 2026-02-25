@@ -13,11 +13,15 @@ class datafastDB
 {
 
     
-    private function getLogger(): Logger
+    private function getLogger(): ?Logger
     {
-        $logger = new Logger('datafastDB');
-        $logger->pushHandler(new StreamHandler(Constants::LOGGER_FILE, Logger::DEBUG));
-        return $logger;
+        try {
+            $logger = new Logger('datafastDB');
+            $logger->pushHandler(new StreamHandler(Constants::LOGGER_FILE, Logger::DEBUG));
+            return $logger;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
 
