@@ -37,16 +37,8 @@ if (!defined('_PS_VERSION_')) {
 class datafast extends PaymentModule
 {
 
-    private $entityId;
-    private $bearerToken;
-    private $mid;
-    private $tid;
-    private $proveedor;
-    private $prefijo_trx;
-	private $installments;
-    private $dev;
-    private $produrl;
-    private $devurl;
+    private $_html = '';
+    private $status_module;
 
 
     public function __construct()
@@ -77,27 +69,25 @@ class datafast extends PaymentModule
 
     public function checkIfConfigurationIsProvided(): void
     {
-        if (!isset($this->entityId)
-            || !isset($this->dev)
-            || !isset($this->produrl)
-            || !isset($this->bearerToken)
-            || !isset($this->mid)
-            || !isset($this->tid)
-            || !isset($this->risk)
-            || !isset($this->proveedor)
-            || !isset($this->prefijo_trx)
-            || empty($this->dev)
-            || empty($this->produrl)
-            || empty($this->entityId)
-            || empty($this->bearerToken)
-            || empty($this->mid)
-            || empty($this->tid)
-            || empty($this->risk)
-            || empty($this->proveedor)
-            || empty($this->prefijo_trx)
-        ) {
-            $this->warning = 'Toda la información debe ser configurada antes de utilizar el módulo.';
-            $this->status_module = false;
+        $requiredKeys = [
+            'DATAFAST_DEV',
+            'DATAFAST_PRODULR',
+            'DATAFAST_ENTITY_ID',
+            'DATAFAST_BEARER_TOKEN',
+            'DATAFAST_MID',
+            'DATAFAST_TID',
+            'DATAFAST_RISK',
+            'DATAFAST_PROVEEDOR',
+            'DATAFAST_PREFIJOTRX',
+        ];
+
+        foreach ($requiredKeys as $key) {
+            $value = Configuration::get($key, null);
+            if (empty($value)) {
+                $this->warning = 'Toda la información debe ser configurada antes de utilizar el módulo.';
+                $this->status_module = false;
+                return;
+            }
         }
     }
 
@@ -1608,7 +1598,8 @@ class datafast extends PaymentModule
                 'datafastAmount' => $datafastAmount,
                 'datafastAuth' => $datafastAuth,
                 'datafastCardHolder' => $datafastCardHolder,
-				'datafastExtendedDescripcion' => $datafastExtendedDescripcion
+				'datafastExtendedDescripcion' => $datafastExtendedDescripcion,
+                'message' => $datafastExtendedDescripcion,
             ));
 
         }
@@ -1829,6 +1820,7 @@ class datafast extends PaymentModule
     protected function getDatafastRequest(): DatafastRequest
     {
         $config = new Config();
+        $data = [];
 		$data['DATAFAST_DEV']=Configuration::get('DATAFAST_DEV', null);
 		$data['DATAFAST_BEARER_TOKEN']=Configuration::get('DATAFAST_BEARER_TOKEN', null);
 		$data['DATAFAST_ENTITY_ID']=Configuration::get('DATAFAST_ENTITY_ID', null);
@@ -1863,7 +1855,7 @@ class datafast extends PaymentModule
         $dbquery = new DbQuery();
         $dbquery->select('dct.token AS token');
         $dbquery->from( 'datafast_customertoken', 'dct');
-        $dbquery->where("dct.customer_id = '". $this->context->customer->id."'");
+        $dbquery->where("dct.customer_id = '" . (int)$this->context->customer->id . "'");
 		$dbquery->where("dct.token <>''");
         $customersRegistrations = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($dbquery->build());
         return $customersRegistrations;
@@ -1989,76 +1981,6 @@ class datafast extends PaymentModule
 
     }
 
-    public function buildConfigInfo(): void
-    {
-        $config = Configuration::getMultiple(array('DATAFAST_DEV'
-                                                ,'DATAFAST_ENTITY_ID'
-                                                , 'DATAFAST_BEARER_TOKEN'
-                                                , 'DATAFAST_MID'
-                                                , 'DATAFAST_TID'
-                                                , 'DATAFAST_RISK'
-                                                , 'DATAFAST_PROVEEDOR'
-                                                , 'DATAFAST_ECI'
-                                                , 'DATAFAST_PREFIJOTRX'
-                                                ,'DATAFAST_CUSTOMERTOKEN'
-                                                ,'DATAFAST_STYLE'
-                                                ,'DATAFAST_CVV'
-                                                ,'DATAFAST_DEVURL'
-                                                ,'DATAFAST_PRODULR'));
-
-        if (isset($config['DATAFAST_ENTITY_ID'])) {
-            $this->entityId = $config['DATAFAST_ENTITY_ID'];
-        }
-
-        if (isset($config['DATAFAST_BEARER_TOKEN'])) {
-            $this->bearerToken = $config['DATAFAST_BEARER_TOKEN'];
-        }
-
-        if (isset($config['DATAFAST_MID'])) {
-            $this->mid = $config['DATAFAST_MID'];
-        }
-
-        if (isset($config['DATAFAST_TID'])) {
-            $this->tid = $config['DATAFAST_TID'];
-        }
-
-        if (isset($config['DATAFAST_RISK'])) {
-            $this->risk = $config['DATAFAST_RISK'];
-        }
-
-        if (isset($config['DATAFAST_PROVEEDOR'])) {
-            $this->proveedor = $config['DATAFAST_PROVEEDOR'];
-        }
-
-        if (isset($config['DATAFAST_PREFIJOTRX'])) {
-            $this->prefijo_trx = $config['DATAFAST_PREFIJOTRX'];
-        }
-		
-		if (isset($config['DATAFAST_CUSTOMERTOKEN'])) {
-            $this->customer_token = $config['DATAFAST_CUSTOMERTOKEN'];
-        }
-        
-        if (isset($config['DATAFAST_STYLE'])) {
-            $this->style = $config['DATAFAST_STYLE'];
-        }
-
-        if (isset($config['DATAFAST_CVV'])) {
-            $this->requirecvv = $config['DATAFAST_CVV'];
-        }
-
-        if (isset($config['DATAFAST_DEV'])) {
-            $this->dev = $config['DATAFAST_DEV'];
-        }
-
-        if (isset($config['DATAFAST_PRODULR'])) {
-            $this->produrl = $config['DATAFAST_PRODULR'];
-        }
-
-        if (isset($config['DATAFAST_DEVURL'])) {
-            $this->devurl = $config['DATAFAST_DEVURL'];
-        }
-
-    }
     function searchTransactionByPaymentId($data)
     { 
         if (!isset($data)) {
