@@ -1563,6 +1563,7 @@ class datafast extends PaymentModule
 
         $href_return = AdminController::$currentIndex . '&configure=' . $this->name.'&token=' .Tools::getAdminTokenLite('AdminModules');
         $href_detail = AdminController::$currentIndex . '&configure=' . $this->name.'&viewDetailsTransaction&token=' .Tools::getAdminTokenLite('AdminModules');
+        $form_action = AdminController::$currentIndex . '&configure=' . $this->name.'&viewTransactions&token=' .Tools::getAdminTokenLite('AdminModules');
         $this->context->smarty->assign(
             array(
                 'allYearOptions' => $years,
@@ -1571,8 +1572,9 @@ class datafast extends PaymentModule
                 'txtIdTrx' => $txtIdTrx,
                 'href_return' => $href_return,
                 'href_detail' => $href_detail,
+                'form_action' => $form_action,
                 'data' => $data
-               
+
             )
         );
 

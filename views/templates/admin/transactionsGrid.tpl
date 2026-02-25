@@ -1,4 +1,4 @@
-    <form method="POST" action="?controller={$smarty.get.controller|escape:'html':'UTF-8'}&configure={$smarty.get.configure|escape:'html':'UTF-8'}&token={$smarty.get.token|escape:'html':'UTF-8'}&viewTransactions">
+    <form method="POST" action="{$form_action|escape:'html':'UTF-8'}">
         <div class="panel" id="fieldset_0">
             <div class="panel-heading">
                 <i class="icon-eye"></i> Consulta de Transacciones
