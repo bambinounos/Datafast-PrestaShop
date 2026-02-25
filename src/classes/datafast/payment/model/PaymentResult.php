@@ -27,8 +27,8 @@ class PaymentResult
         $arr = get_object_vars($json);
 
         return new self(
-            $arr['code'],
-            $arr['description']
+            $arr['code'] ?? null,
+            $arr['description'] ?? null
         );
     }
 

@@ -112,9 +112,9 @@ class PaymentResultDetails
             $clearingInstituteName = $arr['clearingInstituteName'];
         }
 
-        $clearingInstituteName = null;
-        if (array_key_exists('clearingInstituteName', $arr)) {
-            $clearingInstituteName = $arr['clearingInstituteName'];
+        $riskResponseCode = null;
+        if (array_key_exists('RiskResponseCode', $arr)) {
+            $riskResponseCode = $arr['RiskResponseCode'];
         }
 
         $action = null;
@@ -122,18 +122,15 @@ class PaymentResultDetails
             $action = $arr['action'];
         }
 
-
         $acquirerResponse = null;
         if (array_key_exists('AcquirerResponse', $arr)) {
             $acquirerResponse = $arr['AcquirerResponse'];
         }
 
-
         $riskOrderId = null;
         if (array_key_exists('RiskOrderId', $arr)) {
             $riskOrderId = $arr['RiskOrderId'];
         }
-
 
         return new self(
             $authCode,
@@ -146,7 +143,7 @@ class PaymentResultDetails
             $riskStatusCode,
             $extendedDescription,
             $clearingInstituteName,
-            $clearingInstituteName,
+            $riskResponseCode,
             $action,
             $acquirerResponse,
             $riskOrderId

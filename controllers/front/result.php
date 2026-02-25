@@ -94,7 +94,7 @@ class datafastResultModuleFrontController extends ModuleFrontController
                 $datafastExtendedDescripcion = $resultdescription;
             }
             $refunded=false;
-            if(($objResponse["amount"]!=null  && isset($objResponse["amount"])) && number_format($total, 2,'.','') != $objResponse["amount"])
+            if(isset($objResponse["amount"]) && number_format($total, 2,'.','') != $objResponse["amount"])
             {
                 $request->setAmount( $objResponse['amount']);
                 $request->setTransactionId( $objResponse['id']);
@@ -299,9 +299,13 @@ class datafastResultModuleFrontController extends ModuleFrontController
                 $logger->$level($message, $context);
             }
         } catch (\Throwable $e) {
-            // Logger no disponible
+            // Monolog no disponible
         }
-        \PrestaShopLogger::addLog('[Datafast] ' . $message, $level === 'error' ? 3 : 1);
+        try {
+            \PrestaShopLogger::addLog('[Datafast] ' . $message, $level === 'error' ? 3 : 1);
+        } catch (\Throwable $e) {
+            // PrestaShopLogger no disponible
+        }
     }
 
     private function validateTransaction(string $resultCode): bool

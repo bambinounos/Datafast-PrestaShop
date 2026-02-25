@@ -4,10 +4,6 @@
 namespace datafast\payment\datafast\payment\model;
 
 
-use Monolog\Handler\StreamHandler;
-use Monolog\Logger;
-use datafast\payment\model\Constants;
-use datafast\payment\datafast\payment\Config;
 
 class PaymentResponse
 {
@@ -63,35 +59,40 @@ class PaymentResponse
 
     public static function fromJson($json)
     {
-
         $arr = get_object_vars($json);
         $customer = null;
-        if (array_key_exists('$customer', $arr)) {
-            $customer = PaymentCustomer::fromJson($arr['$customer']);
+        if (array_key_exists('customer', $arr)) {
+            $customer = PaymentCustomer::fromJson($arr['customer']);
         }
 
-        $request = Config::getDatafastRequest();
+        $customParameters = null;
+        try {
+            if (isset($arr['customParameters'])) {
+                $customArrayResponse = get_object_vars($arr['customParameters']);
+                $mid = \Configuration::get('DATAFAST_MID') ?: '';
+                $tid = \Configuration::get('DATAFAST_TID') ?: '';
+                $midTid = $mid . "_" . $tid;
+                $customParameters = $customArrayResponse[$midTid] ?? null;
+            }
+        } catch (\Exception $e) {
+            $customParameters = null;
+        }
 
-        $mid = $request->getMid();
-        $tid = $request->getTid();
-
-        $logger = new Logger('PaymentResponse');
-        $logger->pushHandler(new StreamHandler(Constants::LOGGER_FILE, Logger::DEBUG));
-        $customArrayResponse = get_object_vars($arr['customParameters']);
-        $midTid = $mid . "_" . $tid;
-        $customParameters = $customArrayResponse[$midTid];
+        $result = isset($arr['result']) ? PaymentResult::fromJson($arr['result']) : null;
+        $resultDetails = isset($arr['resultDetails']) ? PaymentResultDetails::fromJson($arr['resultDetails']) : null;
+        $card = isset($arr['card']) ? PaymentCard::fromJson($arr['card']) : null;
 
         return new self(
-            $arr['id'],
-            $arr['paymentType'],
-            $arr['paymentBrand'],
-            $arr['amount'],
-            $arr['currency'],
-            $arr['descriptor'],
-            $arr['merchantTransactionId'],
-            PaymentResult::fromJson($arr['result']),
-            PaymentResultDetails::fromJson($arr['resultDetails']),
-            PaymentCard::fromJson($arr['card']),
+            $arr['id'] ?? null,
+            $arr['paymentType'] ?? null,
+            $arr['paymentBrand'] ?? null,
+            $arr['amount'] ?? null,
+            $arr['currency'] ?? null,
+            $arr['descriptor'] ?? null,
+            $arr['merchantTransactionId'] ?? null,
+            $result,
+            $resultDetails,
+            $card,
             $customer,
             $customParameters
         );

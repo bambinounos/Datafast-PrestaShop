@@ -38,12 +38,12 @@ class PaymentCard
         $arr = get_object_vars($json);
 
         return new self(
-            $arr['bin'],
-            $arr['binCountry'],
-            $arr['last4Digits'],
-            $arr['holder'],
-            $arr['expiryMonth'],
-            $arr['expiryYear']
+            $arr['bin'] ?? null,
+            $arr['binCountry'] ?? null,
+            $arr['last4Digits'] ?? null,
+            $arr['holder'] ?? null,
+            $arr['expiryMonth'] ?? null,
+            $arr['expiryYear'] ?? null
         );
     }
 

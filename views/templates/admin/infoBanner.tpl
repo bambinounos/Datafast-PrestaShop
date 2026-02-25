@@ -6,8 +6,8 @@
 				INFORMACIÓN Y TEST DE API
 			</h3>
 		Para visualizar la informacion de la Ip del server y testear las Apis:
-<a href="{$href|escape:'html':'UTF-8'}" class="edit btn btn-default {if $disable}disabled{/if}" title="{$action}" >
-	<i class="icon-search-plus"></i> {$action}<br>
+<a href="{$href|escape:'html':'UTF-8'}" class="edit btn btn-default {if $disable}disabled{/if}" title="{$action|escape:'html':'UTF-8'}" >
+	<i class="icon-search-plus"></i> {$action|escape:'html':'UTF-8'}<br>
 </a>
 </div>
 </div>

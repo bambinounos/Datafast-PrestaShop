@@ -9,11 +9,13 @@ class DatafastRequestRefund
     const PAYMENT_TYPEREFUND = "RF";
     const CURRENCY = "USD";
 
-    private $urlRequest;
-    private $entityId;
-    private $bearerToken;
-    private $amount;
-    private $risk;
+    private $urlRequest = '';
+    private $entityId = '';
+    private $bearerToken = '';
+    private $amount = '';
+    private $risk = '';
+    private $testMode = false;
+    private $resourcePathUri = '';
 
     /**
      * @return string

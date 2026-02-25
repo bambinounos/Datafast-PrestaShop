@@ -93,7 +93,8 @@ class datafast extends PaymentModule
 
     public function checkForCurrency(): void
     {
-        if (!count(Currency::checkPaymentCurrencies($this->id))) {
+        $currencies = Currency::checkPaymentCurrencies($this->id);
+        if (!is_array($currencies) || !count($currencies)) {
             $this->warning = $this->l('No currency has been set for this module.');
         }
     }
@@ -165,9 +166,6 @@ class datafast extends PaymentModule
             $this->_errors[] = $this->l('No se pudo registrar los payments hooks en el botón de Datafast');
             return false;
         }
-
-
-        return true;
     }
 
     public function addOrderState($name)
@@ -474,28 +472,33 @@ class datafast extends PaymentModule
             $id_transaction = (int) Tools::getValue('id_transaction');
             $transactions = $this->getTransactions($id_transaction,0,0);
 
-                $cart_id = $transactions[0]['cart_id'];
-                $checkout_id = $transactions[0]['checkout_id'];
-                $updated_at = $transactions[0]['updated_at'];
-                $customer_id = $transactions[0]['customer_id'];
-                $merchantTransactionid = $transactions[0]['merchantTransactionid'];
+            if (empty($transactions)) {
+                $this->_html .= '<div class="alert alert-danger">Transacción no encontrada.</div>';
+                return $this->_html;
+            }
+
+                $cart_id = $transactions[0]['cart_id'] ?? '';
+                $checkout_id = $transactions[0]['checkout_id'] ?? '';
+                $updated_at = $transactions[0]['updated_at'] ?? '';
+                $customer_id = $transactions[0]['customer_id'] ?? '';
+                $merchantTransactionid = $transactions[0]['merchantTransactionid'] ?? '';
                 $amount = round($transactions[0]['amount'] ?? 0,2);
-                $result_code = $transactions[0]['result_code'];
-                $result_description = $transactions[0]['result_description'];
-                $extended_description = $transactions[0]['extended_description'];
-                $auth_code = $transactions[0]['auth_code'];
-                $batch_no = $transactions[0]['batch_no'];
-                $payment_type = $transactions[0]['payment_type'];
-                $reference_no = $transactions[0]['reference_no'];
-                $acquirer_code = $transactions[0]['acquirer_code'];
+                $result_code = $transactions[0]['result_code'] ?? '';
+                $result_description = $transactions[0]['result_description'] ?? '';
+                $extended_description = $transactions[0]['extended_description'] ?? '';
+                $auth_code = $transactions[0]['auth_code'] ?? '';
+                $batch_no = $transactions[0]['batch_no'] ?? '';
+                $payment_type = $transactions[0]['payment_type'] ?? '';
+                $reference_no = $transactions[0]['reference_no'] ?? '';
+                $acquirer_code = $transactions[0]['acquirer_code'] ?? '';
                 $interest = round($transactions[0]['interest'] ?? 0,2);
                 $total_amount = round($transactions[0]['total_amount'] ?? 0,2);
-                $transaction_id = $transactions[0]['transaction_id'];
-                $response = $transactions[0]['response'];
-                $acquirer_response = $transactions[0]['acquirer_response'];
-                $response_json = $transactions[0]['response_json'];
-                $status = $transactions[0]['status']; 
-                $status_name = $transactions[0]['status_name']; 
+                $transaction_id = $transactions[0]['transaction_id'] ?? '';
+                $response = $transactions[0]['response'] ?? '';
+                $acquirer_response = $transactions[0]['acquirer_response'] ?? '';
+                $response_json = $transactions[0]['response_json'] ?? '';
+                $status = $transactions[0]['status'] ?? '';
+                $status_name = $transactions[0]['status_name'] ?? ''; 
             if (Tools::isSubmit('refundDatafast'))
             {
  
@@ -763,12 +766,12 @@ class datafast extends PaymentModule
             return $this->display(__FILE__, 'views/templates/admin/recoverTransactions.tpl'); 
         }   
 
-        if ($formUpdate<>"1")
-        {        
+        if ($formUpdate !== 1)
+        {
             $this->context->smarty->assign('module_dir', $this->_path);
             $this->context->smarty->assign('web_url', $this->context->link->getModuleLink($this->name, 'status', array(), true));
-            $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
-            
+            $this->_html .= $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
+
             $this->_html .= $this->getTransactionsPreview();
             $this->_html .= $this->getConfigForm();
             $this->_html .= $this->getConfigFormInstallments();
@@ -1063,9 +1066,13 @@ class datafast extends PaymentModule
                 $logger->error($message);
             }
         } catch (\Throwable $e) {
-            // Monolog falló, ignorar
+            // Monolog no disponible
         }
-        PrestaShopLogger::addLog('[Datafast] ' . $message, 3);
+        try {
+            PrestaShopLogger::addLog('[Datafast] ' . $message, 3);
+        } catch (\Throwable $e) {
+            // PrestaShopLogger no disponible
+        }
     }
 
     /**
@@ -1585,45 +1592,54 @@ class datafast extends PaymentModule
 
     public function hookPaymentReturn($params)
     {
-		
         if ($this->active == false) {
             return;
         }
 
         $order = $params['order'];
 
-        if ($order->getCurrentOrderState()->id != Configuration::get('PS_OS_ERROR')) {
+        // Default values para evitar ErrorException en Smarty strict mode
+        $templateVars = array(
+            'this_path' => $this->getPath(),
+            'status' => 'error',
+            'shop_name' => $this->context->shop->name,
+            'datafastBrand' => '',
+            'datafastAmount' => '',
+            'datafastAuth' => '',
+            'datafastCardHolder' => '',
+            'datafastExtendedDescripcion' => '',
+            'message' => '',
+        );
 
+        $currentState = $order->getCurrentOrderState();
+        if ($currentState && $currentState->id != Configuration::get('PS_OS_ERROR')) {
 
-            $datafastBrand = Context::getContext()->cookie->datafastBrand;
-            $datafastAmount = Context::getContext()->cookie->datafastAmount;
-            $datafastAuth = Context::getContext()->cookie->datafastAuth;
-            $datafastCardHolder = Context::getContext()->cookie->datafastCardHolder;
-			$datafastExtendedDescripcion = Context::getContext()->cookie->datafastExtendedDescripcion;
+            $cookie = Context::getContext()->cookie;
+            $datafastBrand = isset($cookie->datafastBrand) ? $cookie->datafastBrand : '';
+            $datafastAmount = isset($cookie->datafastAmount) ? $cookie->datafastAmount : '';
+            $datafastAuth = isset($cookie->datafastAuth) ? $cookie->datafastAuth : '';
+            $datafastCardHolder = isset($cookie->datafastCardHolder) ? $cookie->datafastCardHolder : '';
+            $datafastExtendedDescripcion = isset($cookie->datafastExtendedDescripcion) ? $cookie->datafastExtendedDescripcion : '';
 
             $status_map = array(
-                $this->getConfig('PS_OS_PAYMENT') => 'ok',
-                $this->getConfig('PS_OS_OUTOFSTOCK') => 'ok',
-                $this->getConfig('PS_OS_OUTOFSTOCK_PAID') => 'ok',
-                $this->getConfig('PS_OS_CANCELED') => 'cancel',
+                (int)Configuration::get('PS_OS_PAYMENT') => 'ok',
+                (int)Configuration::get('PS_OS_OUTOFSTOCK') => 'ok',
+                (int)Configuration::get('PS_OS_OUTOFSTOCK_PAID') => 'ok',
+                (int)Configuration::get('PS_OS_CANCELED') => 'cancel',
             );
 
             $status = isset($status_map[$order->getCurrentState()]) ? $status_map[$order->getCurrentState()] : 'error';
 
- 
-				$this->context->smarty->assign(array(
-                'this_path' => $this->getPath(),
-                'status' => $status,
-                'shop_name' => $this->context->shop->name,
-                'datafastBrand' => $datafastBrand,
-                'datafastAmount' => $datafastAmount,
-                'datafastAuth' => $datafastAuth,
-                'datafastCardHolder' => $datafastCardHolder,
-				'datafastExtendedDescripcion' => $datafastExtendedDescripcion,
-                'message' => $datafastExtendedDescripcion,
-            ));
-
+            $templateVars['status'] = $status;
+            $templateVars['datafastBrand'] = $datafastBrand;
+            $templateVars['datafastAmount'] = $datafastAmount;
+            $templateVars['datafastAuth'] = $datafastAuth;
+            $templateVars['datafastCardHolder'] = $datafastCardHolder;
+            $templateVars['datafastExtendedDescripcion'] = $datafastExtendedDescripcion;
+            $templateVars['message'] = $datafastExtendedDescripcion;
         }
+
+        $this->context->smarty->assign($templateVars);
 
         return $this->fetch('module:datafast/views/templates/hook/confirmation.tpl');
     }
@@ -1678,24 +1694,24 @@ class datafast extends PaymentModule
 
        if  ($id_transaction > 0 )
        {
-            $dbquery->where("trx.id =".$id_transaction);
+            $dbquery->where("trx.id = " . (int)$id_transaction);
        }
-       
+
        if  ($year > 0 )
        {
-            $dbquery->where("YEAR(timestamp) =".$year);
+            $dbquery->where("YEAR(timestamp) = " . (int)$year);
        }
        if  ($month > 0 )
        {
-            $dbquery->where("MONTH(timestamp) =".$month);
+            $dbquery->where("MONTH(timestamp) = " . (int)$month);
        }
-       if  ($orden <> '' )
+       if  ($orden != '' )
        {
-            $dbquery->where("trx.cart_id ='".$orden."'");
+            $dbquery->where("trx.cart_id = '" . pSQL($orden) . "'");
        }
-       if  ($id_trx <> '' )
+       if  ($id_trx != '' )
        {
-            $dbquery->where("trx.transaction_id ='".$id_trx."'");
+            $dbquery->where("trx.transaction_id = '" . pSQL($id_trx) . "'");
        }
 
         $transactions = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($dbquery->build());
@@ -1811,7 +1827,7 @@ class datafast extends PaymentModule
             }
 
 
-            $removetoken = AdminController::$currentIndex . '&configure=' . $this->name.'&viewTransactions&token=' .Tools::getAdminTokenLite('AdminModules');
+            $removetoken = '';
 
             $this->smarty->assign("termtypes",$arr);
             $this->smarty->assign("defaultTermType",$defaultTermType);
@@ -1898,7 +1914,7 @@ class datafast extends PaymentModule
 
         $address = new Address((int)$cart->id_address_delivery);
 
-        $customerIp = $_SERVER['REMOTE_ADDR'];
+        $customerIp = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
         $shippingAddress = $address->address1;
 		$shippingCountry = "EC";
 		
@@ -2003,29 +2019,33 @@ class datafast extends PaymentModule
     }
 
     function searchTransactionByPaymentId($data)
-    { 
+    {
         if (!isset($data)) {
             return false;
-        }   
+        }
+        $config = [];
         $config['DATAFAST_DEV']=Configuration::get('DATAFAST_DEV', null);
         $config['DATAFAST_BEARER_TOKEN']=Configuration::get('DATAFAST_BEARER_TOKEN', null);
-        $config['DATAFAST_ENTITY_ID']=Configuration::get('DATAFAST_ENTITY_ID', null); 
+        $config['DATAFAST_ENTITY_ID']=Configuration::get('DATAFAST_ENTITY_ID', null);
         $config['DATAFAST_PRODULR']=Configuration::get('DATAFAST_PRODULR', null);
         $config['DATAFAST_DEVURL']=Configuration::get('DATAFAST_DEVURL', null);
 
+        $url = '';
 	    if ($config['DATAFAST_DEV']) {
-            if($config['DATAFAST_DEVURL']=='1')	
-                  $url = Environment::TEST; 
-            if($config['DATAFAST_DEVURL']=='2')	
-                  $url = Environment::TEST2; 
+            if(($config['DATAFAST_DEVURL'] ?? '') == '2') {
+                $url = Environment::TEST2;
+            } else {
+                $url = Environment::TEST;
+            }
             $verifyPeer = false;
         } else {
-            if($config['DATAFAST_PRODULR']=='1')	
-                $url = Environment::PRODUCTION; 
-            if($config['DATAFAST_PRODULR']=='2')	
-                $url = Environment::PRODUCTION2;  
+            if(($config['DATAFAST_PRODULR'] ?? '') == '2') {
+                $url = Environment::PRODUCTION2;
+            } else {
+                $url = Environment::PRODUCTION;
+            }
             $verifyPeer = true;
-        }    
+        }
         $url = $url."query/".$data;  
         $url .= "?entityId=".$config['DATAFAST_ENTITY_ID']; 
         $ch = curl_init();

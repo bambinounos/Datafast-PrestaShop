@@ -19,6 +19,7 @@ class Payment
     private $productInfo;
     private $customerInfo;
     private $shipping;
+    private $registrations = [];
 
 
     /**

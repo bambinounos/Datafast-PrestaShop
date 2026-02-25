@@ -59,12 +59,12 @@ table {
 				<tbody>
 					<tr>
 						<td>Ip Pública del Servidor:</td>
-						<td>{$IPServidor}</td>
+						<td>{$IPServidor|escape:'html':'UTF-8'}</td>
 						<td></td>
 					</tr>
 					<tr>
 						<td>Ip cliente (Navegador Actual):</td>
-						<td>{$IPCliente}</td>
+						<td>{$IPCliente|escape:'html':'UTF-8'}</td>
 						<td></td>
 					</tr>
 				</table>
@@ -132,7 +132,7 @@ table {
 					</style>
 						
 					<br><br><br>
-					<a href="{$href_return}" class="btn btn-default">
+					<a href="{$href_return|escape:'html':'UTF-8'}" class="btn btn-default">
 					<i class="process-icon-back"></i> Regresar</a>
 				</footer>
 			

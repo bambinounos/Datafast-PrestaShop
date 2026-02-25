@@ -2,7 +2,7 @@
 
 
     
-    <script src="{$checkScript}"></script>
+    <script src="{$checkScript|escape:'html':'UTF-8'}"></script>
   
     <script type="text/javascript">
 
@@ -70,7 +70,7 @@
                                     '</div>'+
                                     '<select id="cboInstallments" class="wpwl-control" onChange="javascript:setInstallment(this);">' +
                                     {section name=co loop=$termtypes}
-                                            '<option value="{$termtypes[co].code}">{$termtypes[co].name}</option>'+
+                                            '<option value="{$termtypes[co].code|escape:'html':'UTF-8'}">{$termtypes[co].name|escape:'html':'UTF-8'}</option>'+
                                     {/section}
                                     '</div>';
                 $('form.wpwl-form-card').find('.wpwl-button').before(tipocredito);
@@ -181,7 +181,7 @@
 					
 
     </script> 
-    <form action="{$action}" class="paymentWidgets" id="datafastPaymentForm" data-brands="VISA MASTER AMEX DINERS DISCOVER ALIA">
+    <form action="{$action|escape:'html':'UTF-8'}" class="paymentWidgets" id="datafastPaymentForm" data-brands="VISA MASTER AMEX DINERS DISCOVER ALIA">
     </form>
   <style>
         .wpwl-wrapper-registration-registrationId{

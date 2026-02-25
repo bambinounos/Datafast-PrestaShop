@@ -6,8 +6,24 @@ use datafast\payment\model\Environment;
 class Config
 {
 
-    public function getDatafastRequest($data): DatafastRequest
+    public static function getDatafastRequest($data = null): DatafastRequest
     {
+        if ($data === null) {
+            $data = [
+                'DATAFAST_DEV' => \Configuration::get('DATAFAST_DEV'),
+                'DATAFAST_DEVURL' => \Configuration::get('DATAFAST_DEVURL'),
+                'DATAFAST_PRODULR' => \Configuration::get('DATAFAST_PRODULR'),
+                'DATAFAST_BEARER_TOKEN' => \Configuration::get('DATAFAST_BEARER_TOKEN'),
+                'DATAFAST_ENTITY_ID' => \Configuration::get('DATAFAST_ENTITY_ID'),
+                'DATAFAST_MID' => \Configuration::get('DATAFAST_MID'),
+                'DATAFAST_TID' => \Configuration::get('DATAFAST_TID'),
+                'DATAFAST_RISK' => \Configuration::get('DATAFAST_RISK'),
+                'DATAFAST_PROVEEDOR' => \Configuration::get('DATAFAST_PROVEEDOR'),
+                'DATAFAST_ECI' => \Configuration::get('DATAFAST_ECI'),
+                'DATAFAST_PREFIJOTRX' => \Configuration::get('DATAFAST_PREFIJOTRX'),
+            ];
+        }
+
         $request = new DatafastRequest();
 
 	    if ($data['DATAFAST_DEV']) {

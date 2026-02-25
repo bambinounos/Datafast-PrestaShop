@@ -52,19 +52,25 @@ class PaymentService
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 			$response = curl_exec($ch);
 
-			if(curl_errno($ch))
+			if(curl_errno($ch) || $response === false)
 			{
-				return curl_error($ch);
+			    $error = curl_error($ch);
+			    curl_close($ch);
+				return $error;
 			}
 			curl_close($ch);
 
             $this->safeLog('debug', "Response Body", (array)$response);
 
-			$objRequest =  json_decode($response, true);
-			$resultCode = $objRequest["result"]["code"];
+			$objRequest = json_decode($response, true);
+			if (!is_array($objRequest) || !isset($objRequest['result']['code'])) {
+			    $this->safeLog('error', 'Invalid checkout response: ' . ($response ?: '(empty)'));
+			    return '';
+			}
+			$resultCode = $objRequest['result']['code'];
 
             if ($resultCode == "000.200.100" || $resultCode == "000.000.000" ) {
-                $checkoutId = $objRequest["id"];
+                $checkoutId = $objRequest['id'] ?? '';
             }
 
         } catch (\Exception $e) {
@@ -100,7 +106,7 @@ class PaymentService
                 'customer.givenName' => $customer->getGivenName(),
                 'customer.middleName' => $customer->getMiddleName(),
                 'customer.surname' => $customer->getSurname(),
-                'customer.ip' => $_SERVER['REMOTE_ADDR'],
+                'customer.ip' => $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
                 'customer.merchantCustomerId' => $customer->getMerchantCustomerId(),
                 'merchantTransactionId' => $datafastRequest->getPrefijoTrx() . date('YmdHisv'),
                 'customer.email' => $customer->getEmail(),
@@ -251,15 +257,17 @@ class PaymentService
 			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER,$verifyPeer);
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 			$response = curl_exec($ch);
-			if(curl_errno($ch))
+			if(curl_errno($ch) || $response === false)
 			{
-				return curl_error($ch);
+			    $error = curl_error($ch);
+			    curl_close($ch);
+				return $error;
 			}
 			curl_close($ch);
 
 			return $response;
         } catch (\Exception $e) {
-            $this->safeLog('error', "Error trying to get checkoutId.", $e->getTrace());
+            $this->safeLog('error', "Error trying to process payment.", $e->getTrace());
             return '';
         }
 
@@ -297,9 +305,11 @@ class PaymentService
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 			$response = curl_exec($ch);
 
-			if(curl_errno($ch))
+			if(curl_errno($ch) || $response === false)
 			{
-				return curl_error($ch);
+			    $error = curl_error($ch);
+			    curl_close($ch);
+				return $error;
 			}
 			curl_close($ch);
 

@@ -60,15 +60,15 @@ class PaymentCustomer
             $arr = get_object_vars($json);
 
             return new self(
-                $arr['givenName'],
-                $arr['surname'],
-                $arr['merchantCustomerId'],
-                $arr['phone'],
-                $arr['email'],
-                $arr['identificationDocType'],
-                $arr['identificationDocId'],
-                $arr['ip'],
-                $arr['ipCountry']
+                $arr['givenName'] ?? null,
+                $arr['surname'] ?? null,
+                $arr['merchantCustomerId'] ?? null,
+                $arr['phone'] ?? null,
+                $arr['email'] ?? null,
+                $arr['identificationDocType'] ?? null,
+                $arr['identificationDocId'] ?? null,
+                $arr['ip'] ?? null,
+                $arr['ipCountry'] ?? null
             );
         }
     }

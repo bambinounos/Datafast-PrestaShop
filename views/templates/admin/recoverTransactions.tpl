@@ -33,21 +33,21 @@ table {
 					{section name=co loop=$success}
 						<div class="p-3 mb-2 bg-success text-white"> 
 							<p>
-								<strong>Transacción {$success[co]} recuperada correctamente.</strong>  
+								<strong>Transacción {$success[co]|escape:'html':'UTF-8'} recuperada correctamente.</strong>  
 							</p> 
 						</div> 
 					{/section}
 					{section name=co loop=$errorsTrxs}
 						<div class="p-3 mb-2 bg-danger text-white"> 
 							<p>
-								<strong>Error la transacción {$errorsTrxs[co]} no se pudo encontrar.</strong> 
+								<strong>Error la transacción {$errorsTrxs[co]|escape:'html':'UTF-8'} no se pudo encontrar.</strong> 
 							</p> 
 						</div> 
 				   {/section}
 				   {section name=co loop=$duplicates}
 					   <div class="p-3 mb-2 bg-warning text-white"> 
 						   <p> 
-							   <strong>Error transacción {$duplicates[co]} repetida. La transacción ya existe en los registros de plugin.</strong> 
+							   <strong>Error transacción {$duplicates[co]|escape:'html':'UTF-8'} repetida. La transacción ya existe en los registros de plugin.</strong> 
 						   </p> 
 					   </div> 
 					{/section}
@@ -62,7 +62,7 @@ table {
 			</style>
 				
 			<br><br><br>
-			<a href="{$href_return}" class="btn btn-default">
+			<a href="{$href_return|escape:'html':'UTF-8'}" class="btn btn-default">
 			<i class="process-icon-back"></i> Regresar</a>
 		</footer>
 			

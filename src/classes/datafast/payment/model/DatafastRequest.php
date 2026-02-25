@@ -10,21 +10,22 @@ class DatafastRequest
     const PAYMENT_TYPEREFUND = "RF";
     const CURRENCY = "USD";
 
-    private $urlRequest;
-    private $entityId;
-    private $bearerToken;
-    private $mid;
-    private $tid;
-    private $risk;
-    private $testMode;
-    private $riskParameters;
+    private $urlRequest = '';
+    private $entityId = '';
+    private $bearerToken = '';
+    private $mid = '';
+    private $tid = '';
+    private $risk = '';
+    private $testMode = false;
+    private $riskParameters = '';
     private $checkoutScript;
     private $resourcePathUri;
     private $resourcePathUriRefund;
-    private $proveedor;
-    private $eci;
-    private $transaction_id;
-    private $amount;
+    private $proveedor = '';
+    private $eci = '';
+    private $transaction_id = '';
+    private $amount = 0.0;
+    private $prefijoTrx = '';
 
     /**
      * @return string
