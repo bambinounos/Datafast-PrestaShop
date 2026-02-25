@@ -1347,18 +1347,20 @@ class datafast extends PaymentModule
         
         $this->smarty->assign(array(
             'href' => $this->context->link->getAdminLink('AdminModules', false) . '&configure=' . $this->name . '&viewTransactions&token=' .Tools::getAdminTokenLite('AdminModules'),
-            'action' => $this->trans('View', array(), 'Admin.Actions'), 
+            'action' => $this->trans('View', array(), 'Admin.Actions'),
+            'disable' => false,
         ));
-  
+
 
         return $this->display(__FILE__, 'views/templates/admin/transactions.tpl');
     }
     protected function getInfoBannerPreview()
     {
-        
+
         $this->smarty->assign(array(
             'href' => $this->context->link->getAdminLink('AdminModules', false) . '&configure=' . $this->name . '&info_testing&token=' .Tools::getAdminTokenLite('AdminModules'),
-            'action' => $this->trans('View', array(), 'Admin.Actions'), 
+            'action' => $this->trans('View', array(), 'Admin.Actions'),
+            'disable' => false,
         ));
   
 
@@ -1369,9 +1371,10 @@ class datafast extends PaymentModule
         
         $this->smarty->assign(array(
             'href' => $this->context->link->getAdminLink('AdminModules', false) . '&configure=' . $this->name . '&recoverTransactions&token=' .Tools::getAdminTokenLite('AdminModules'),
-            'action' => $this->trans('View', array(), 'Admin.Actions'), 
+            'action' => $this->trans('View', array(), 'Admin.Actions'),
+            'disable' => false,
         ));
-  
+
 
         return $this->display(__FILE__, 'views/templates/admin/recoverTransactionsBanner.tpl');
     }
