@@ -33,6 +33,12 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+// Debug: verificar si el archivo se carga en el frontend
+@file_put_contents(
+    _PS_ROOT_DIR_ . '/var/logs/datafast_load.log',
+    date('Y-m-d H:i:s') . ' FILE LOADED sapi=' . php_sapi_name() . ' uri=' . ($_SERVER['REQUEST_URI'] ?? 'N/A') . PHP_EOL,
+    FILE_APPEND
+);
 
 class datafast extends PaymentModule
 {
@@ -45,7 +51,7 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.4.0';
+        $this->version = '2.4.1';
         $this->author = 'Sismetic';
         $this->need_instance = 0;
         $this->is_configurable = 1;
@@ -459,6 +465,22 @@ class datafast extends PaymentModule
             . ' | currencies=' . $currencyCount,
             1
         );
+
+        // Diagnóstico profundo: comparar registros BD de datafast vs ps_wirepayment
+        $sqlCompare = 'SELECT m.`name`, m.`active`, h.`name` as hook_name, hm.`id_shop` as hm_shop, '
+            . '(SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'module_shop` ms WHERE ms.id_module = m.id_module AND ms.id_shop = ' . $shopId . ') as in_module_shop '
+            . 'FROM `' . _DB_PREFIX_ . 'hook_module` hm '
+            . 'INNER JOIN `' . _DB_PREFIX_ . 'module` m ON m.id_module = hm.id_module '
+            . 'INNER JOIN `' . _DB_PREFIX_ . 'hook` h ON h.id_hook = hm.id_hook '
+            . 'WHERE m.`name` IN ("datafast", "ps_wirepayment") '
+            . 'AND h.`name` IN ("paymentOptions", "displayHeader") '
+            . 'ORDER BY m.`name`, h.`name`';
+        $rows = Db::getInstance()->executeS($sqlCompare);
+        $dbInfo = [];
+        foreach ($rows as $row) {
+            $dbInfo[] = $row['name'] . ':' . $row['hook_name'] . ':shop=' . $row['hm_shop'] . ':active=' . $row['active'] . ':mod_shop=' . $row['in_module_shop'];
+        }
+        PrestaShopLogger::addLog('[Datafast] DB Compare: ' . implode(' | ', $dbInfo), 1);
 
         /**
          * If values have been submitted in the form, process.
