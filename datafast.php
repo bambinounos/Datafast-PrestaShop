@@ -379,6 +379,13 @@ class datafast extends PaymentModule
     {
         $this->ensureHooksRegistered();
 
+        // Diagnóstico de hooks
+        $hooksStatus = [];
+        foreach (['paymentOptions', 'paymentReturn', 'displayHeader', 'actionOrderStatusUpdate'] as $h) {
+            $hooksStatus[] = $h . '=' . ($this->isRegisteredInHook($h) ? 'SI' : 'NO');
+        }
+        PrestaShopLogger::addLog('[Datafast] Hooks: ' . implode(', ', $hooksStatus) . ' | active=' . ($this->active ? 'SI' : 'NO') . ' | id=' . ($this->id ?? 'null'), 1);
+
         /**
          * If values have been submitted in the form, process.
          */
