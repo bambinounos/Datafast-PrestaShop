@@ -2,7 +2,7 @@
 <module>
     <name>datafast</name>
     <displayName><![CDATA[Datafast Payment Button]]></displayName>
-    <version><![CDATA[2.4.1]]></version>
+    <version><![CDATA[2.5.0]]></version>
     <description><![CDATA[Datafast payment module]]></description>
     <author><![CDATA[Sismetic]]></author>
     <tab><![CDATA[payments_gateways]]></tab>

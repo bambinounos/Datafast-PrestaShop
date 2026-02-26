@@ -1,7 +1,5 @@
 <section>
     <script type="text/javascript">
-    console.log('[Datafast] Template JS ejecutándose');
-
     function deleteToken(obj) {
         if (confirm("¿Deseas eliminar esta tarjeta?")) {
             let token = $(obj).parent().find('label .wpwl-wrapper-registration-registrationId input');
@@ -48,7 +46,6 @@
 
     var wpwlOptions = {
         onReady: function(onReady) {
-            console.log('[Datafast] Widget onReady ejecutado');
 
             {if $customertoken == '1'}
                 var createRegistrationHtml = '<div class="customLabel">Desea guardar de manera segura sus datos?</div><div class="customInput">' +
@@ -126,12 +123,8 @@
         }
     }
 
-    console.log('[Datafast] wpwlOptions definido, cargando widget con defer...');
-
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('[Datafast] DOMContentLoaded');
         var datafastRadio = document.querySelector("input[data-module-name='datafast']");
-        console.log('[Datafast] Radio button encontrado:', !!datafastRadio);
 
         if (!datafastRadio) return;
 
@@ -139,13 +132,11 @@
 
         datafastRadio.addEventListener('change', function() {
             if (this.checked) {
-                console.log('[Datafast] Opción seleccionada');
                 if (confirmationBtn) confirmationBtn.style.display = 'none';
             }
         });
 
         if (datafastRadio.checked) {
-            console.log('[Datafast] Pre-seleccionado');
             if (confirmationBtn) confirmationBtn.style.display = 'none';
         }
 

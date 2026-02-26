@@ -33,13 +33,6 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-// Debug: verificar si el archivo se carga en el frontend
-@file_put_contents(
-    _PS_ROOT_DIR_ . '/var/logs/datafast_load.log',
-    date('Y-m-d H:i:s') . ' FILE LOADED sapi=' . php_sapi_name() . ' uri=' . ($_SERVER['REQUEST_URI'] ?? 'N/A') . PHP_EOL,
-    FILE_APPEND
-);
-
 class datafast extends PaymentModule
 {
 
@@ -51,7 +44,7 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.4.1';
+        $this->version = '2.5.0';
         $this->author = 'Sismetic';
         $this->need_instance = 0;
         $this->is_configurable = 1;
@@ -435,52 +428,6 @@ class datafast extends PaymentModule
     public function getContent()
     {
         $this->ensureHooksRegistered();
-
-        // Diagnóstico completo
-        $shopId = (int) $this->context->shop->id;
-        $moduleId = (int) $this->id;
-
-        $hooksStatus = [];
-        foreach (['paymentOptions', 'paymentReturn', 'displayHeader', 'actionOrderStatusUpdate'] as $h) {
-            $hooksStatus[] = $h . '=' . ($this->isRegisteredInHook($h) ? 'SI' : 'NO');
-        }
-
-        $inModuleShop = (bool) Db::getInstance()->getValue(
-            'SELECT id_module FROM `' . _DB_PREFIX_ . 'module_shop` WHERE id_module = ' . $moduleId . ' AND id_shop = ' . $shopId
-        );
-        $countryCount = (int) Db::getInstance()->getValue(
-            'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'module_country` WHERE id_module = ' . $moduleId . ' AND id_shop = ' . $shopId
-        );
-        $currencyCount = (int) Db::getInstance()->getValue(
-            'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'module_currency` WHERE id_module = ' . $moduleId . ' AND id_shop = ' . $shopId
-        );
-
-        PrestaShopLogger::addLog(
-            '[Datafast] Hooks: ' . implode(', ', $hooksStatus)
-            . ' | active=' . ($this->active ? 'SI' : 'NO')
-            . ' | id=' . $moduleId
-            . ' | shop=' . $shopId
-            . ' | module_shop=' . ($inModuleShop ? 'SI' : 'NO')
-            . ' | countries=' . $countryCount
-            . ' | currencies=' . $currencyCount,
-            1
-        );
-
-        // Diagnóstico profundo: comparar registros BD de datafast vs ps_wirepayment
-        $sqlCompare = 'SELECT m.`name`, m.`active`, h.`name` as hook_name, hm.`id_shop` as hm_shop, '
-            . '(SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'module_shop` ms WHERE ms.id_module = m.id_module AND ms.id_shop = ' . $shopId . ') as in_module_shop '
-            . 'FROM `' . _DB_PREFIX_ . 'hook_module` hm '
-            . 'INNER JOIN `' . _DB_PREFIX_ . 'module` m ON m.id_module = hm.id_module '
-            . 'INNER JOIN `' . _DB_PREFIX_ . 'hook` h ON h.id_hook = hm.id_hook '
-            . 'WHERE m.`name` IN ("datafast", "ps_wirepayment") '
-            . 'AND h.`name` IN ("paymentOptions", "displayHeader") '
-            . 'ORDER BY m.`name`, h.`name`';
-        $rows = Db::getInstance()->executeS($sqlCompare);
-        $dbInfo = [];
-        foreach ($rows as $row) {
-            $dbInfo[] = $row['name'] . ':' . $row['hook_name'] . ':shop=' . $row['hm_shop'] . ':active=' . $row['active'] . ':mod_shop=' . $row['in_module_shop'];
-        }
-        PrestaShopLogger::addLog('[Datafast] DB Compare: ' . implode(' | ', $dbInfo), 1);
 
         /**
          * If values have been submitted in the form, process.
@@ -1863,12 +1810,9 @@ class datafast extends PaymentModule
     public function hookPaymentOptions($params)
     {
         try {
-            PrestaShopLogger::addLog('[Datafast] hookPaymentOptions INICIO', 1);
-
             $payment = new Payment();
 
             $request = $this->getDatafastRequest();
-            PrestaShopLogger::addLog('[Datafast] URL: ' . $request->getUrlRequest(), 1);
 
             $productInfo[] = $this->getProductInfo();
             $customerInfo = $this->getCustomerInfo();
@@ -1885,13 +1829,10 @@ class datafast extends PaymentModule
             $payment->setRequest($request);
 
             $paymentService = new PaymentService();
-            PrestaShopLogger::addLog('[Datafast] Llamando requestCheckoutId...', 1);
 
             $checkOutId = $paymentService->requestCheckoutId($payment);
-            PrestaShopLogger::addLog('[Datafast] checkOutId: ' . ($checkOutId ?: 'VACIO'), 1);
 
             if (empty($checkOutId)) {
-                PrestaShopLogger::addLog('[Datafast] checkOutId vacio - NO se mostrara opcion de pago', 3);
                 return [];
             }
 
@@ -1967,14 +1908,10 @@ class datafast extends PaymentModule
                 ->setAction($action)
                 ->setAdditionalInformation($setAdditionalInformation);
 
-            PrestaShopLogger::addLog('[Datafast] PaymentOption CREADO OK', 1);
             return [$newOption];
 
-        } catch (\Exception $e) {
-            PrestaShopLogger::addLog('[Datafast] EXCEPTION: ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine(), 3);
-            return [];
-        } catch (\Error $e) {
-            PrestaShopLogger::addLog('[Datafast] ERROR: ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine(), 3);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('[Datafast] hookPaymentOptions error: ' . $e->getMessage(), 3);
             return [];
         }
     }
@@ -2143,10 +2080,6 @@ class datafast extends PaymentModule
 
     public function hookDisplayHeader($params)
     {
-        $controller = $this->context->controller;
-        $controllerClass = get_class($controller);
-        PrestaShopLogger::addLog('[Datafast] hookDisplayHeader - controller=' . $controllerClass . ' active=' . ($this->active ? 'SI' : 'NO'), 1);
-        return '<!-- DATAFAST_MODULE_LOADED controller=' . $controllerClass . ' version=' . $this->version . ' active=' . ($this->active ? '1' : '0') . ' -->';
     }
 
     function searchTransactionByPaymentId($data)
