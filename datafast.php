@@ -45,7 +45,7 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.2.0';
+        $this->version = '2.2.1';
         $this->author = 'Sismetic';
         $this->need_instance = 0;
         $this->is_configurable = 1;
@@ -63,6 +63,20 @@ class datafast extends PaymentModule
         $this->checkIfConfigurationIsProvided();
         if ($this->id && $this->active) {
             $this->checkForCurrency();
+        }
+    }
+
+    /**
+     * Ensure all required hooks are registered in the database.
+     * Safe to call multiple times - checks before registering.
+     */
+    private function ensureHooksRegistered(): void
+    {
+        $requiredHooks = ['paymentOptions', 'paymentReturn', 'displayHeader', 'actionOrderStatusUpdate'];
+        foreach ($requiredHooks as $hook) {
+            if (!$this->isRegisteredInHook($hook)) {
+                $this->registerHook($hook);
+            }
         }
     }
 
@@ -359,6 +373,8 @@ class datafast extends PaymentModule
 
     public function getContent()
     {
+        $this->ensureHooksRegistered();
+
         /**
          * If values have been submitted in the form, process.
          */
