@@ -45,7 +45,7 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.3.2';
+        $this->version = '2.4.0';
         $this->author = 'Sismetic';
         $this->need_instance = 0;
         $this->is_configurable = 1;
@@ -67,11 +67,30 @@ class datafast extends PaymentModule
     }
 
     /**
-     * Ensure all required hooks are registered in the database.
-     * Safe to call multiple times - checks before registering.
+     * Ensure module is properly registered in all PS9-required tables:
+     * - ps_module_shop (required for Hook::exec INNER JOIN)
+     * - ps_hook_module (hook registrations per shop)
+     * - ps_module_country (required for payment modules)
+     * - ps_module_currency (required for payment modules)
      */
     private function ensureHooksRegistered(): void
     {
+        $shopId = (int) $this->context->shop->id;
+        $moduleId = (int) $this->id;
+
+        // 1. Ensure ps_module_shop entry exists (CRITICAL for PS9 hook dispatch)
+        $existsInShop = (bool) Db::getInstance()->getValue(
+            'SELECT id_module FROM `' . _DB_PREFIX_ . 'module_shop` WHERE id_module = ' . $moduleId . ' AND id_shop = ' . $shopId
+        );
+        if (!$existsInShop) {
+            Db::getInstance()->insert('module_shop', [
+                'id_module' => $moduleId,
+                'id_shop' => $shopId,
+            ]);
+            PrestaShopLogger::addLog('[Datafast] Insertado en ps_module_shop para shop=' . $shopId, 2);
+        }
+
+        // 2. Ensure hooks are registered
         $requiredHooks = ['paymentOptions', 'paymentReturn', 'displayHeader', 'actionOrderStatusUpdate'];
         foreach ($requiredHooks as $hook) {
             try {
@@ -81,6 +100,38 @@ class datafast extends PaymentModule
             } catch (\Throwable $e) {
                 // Hook already exists in DB for another shop context - safe to ignore
             }
+        }
+
+        // 3. Ensure ps_module_country entries (required for payment hooks in PS9)
+        $countryCount = (int) Db::getInstance()->getValue(
+            'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'module_country` WHERE id_module = ' . $moduleId . ' AND id_shop = ' . $shopId
+        );
+        if ($countryCount === 0) {
+            $countries = Country::getCountries($this->context->language->id, true);
+            foreach ($countries as $country) {
+                Db::getInstance()->insert('module_country', [
+                    'id_module' => $moduleId,
+                    'id_shop' => $shopId,
+                    'id_country' => (int) $country['id_country'],
+                ], false, true, Db::INSERT_IGNORE);
+            }
+            PrestaShopLogger::addLog('[Datafast] Insertados ' . count($countries) . ' países en ps_module_country', 2);
+        }
+
+        // 4. Ensure ps_module_currency entries (required for payment hooks in PS9)
+        $currencyCount = (int) Db::getInstance()->getValue(
+            'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'module_currency` WHERE id_module = ' . $moduleId . ' AND id_shop = ' . $shopId
+        );
+        if ($currencyCount === 0) {
+            $currencies = Currency::getCurrencies(false, true);
+            foreach ($currencies as $currency) {
+                Db::getInstance()->insert('module_currency', [
+                    'id_module' => $moduleId,
+                    'id_shop' => $shopId,
+                    'id_currency' => (int) $currency['id_currency'],
+                ], false, true, Db::INSERT_IGNORE);
+            }
+            PrestaShopLogger::addLog('[Datafast] Insertadas ' . count($currencies) . ' monedas en ps_module_currency', 2);
         }
     }
 
@@ -379,12 +430,35 @@ class datafast extends PaymentModule
     {
         $this->ensureHooksRegistered();
 
-        // Diagnóstico de hooks
+        // Diagnóstico completo
+        $shopId = (int) $this->context->shop->id;
+        $moduleId = (int) $this->id;
+
         $hooksStatus = [];
         foreach (['paymentOptions', 'paymentReturn', 'displayHeader', 'actionOrderStatusUpdate'] as $h) {
             $hooksStatus[] = $h . '=' . ($this->isRegisteredInHook($h) ? 'SI' : 'NO');
         }
-        PrestaShopLogger::addLog('[Datafast] Hooks: ' . implode(', ', $hooksStatus) . ' | active=' . ($this->active ? 'SI' : 'NO') . ' | id=' . ($this->id ?? 'null'), 1);
+
+        $inModuleShop = (bool) Db::getInstance()->getValue(
+            'SELECT id_module FROM `' . _DB_PREFIX_ . 'module_shop` WHERE id_module = ' . $moduleId . ' AND id_shop = ' . $shopId
+        );
+        $countryCount = (int) Db::getInstance()->getValue(
+            'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'module_country` WHERE id_module = ' . $moduleId . ' AND id_shop = ' . $shopId
+        );
+        $currencyCount = (int) Db::getInstance()->getValue(
+            'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'module_currency` WHERE id_module = ' . $moduleId . ' AND id_shop = ' . $shopId
+        );
+
+        PrestaShopLogger::addLog(
+            '[Datafast] Hooks: ' . implode(', ', $hooksStatus)
+            . ' | active=' . ($this->active ? 'SI' : 'NO')
+            . ' | id=' . $moduleId
+            . ' | shop=' . $shopId
+            . ' | module_shop=' . ($inModuleShop ? 'SI' : 'NO')
+            . ' | countries=' . $countryCount
+            . ' | currencies=' . $currencyCount,
+            1
+        );
 
         /**
          * If values have been submitted in the form, process.
