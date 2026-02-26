@@ -1760,10 +1760,12 @@ class datafast extends PaymentModule
     public function hookPaymentOptions($params)
     {
         try {
+            PrestaShopLogger::addLog('[Datafast] hookPaymentOptions INICIO', 1);
 
             $payment = new Payment();
 
             $request = $this->getDatafastRequest();
+            PrestaShopLogger::addLog('[Datafast] URL: ' . $request->getUrlRequest(), 1);
 
             $productInfo[] = $this->getProductInfo();
             $customerInfo = $this->getCustomerInfo();
@@ -1780,10 +1782,13 @@ class datafast extends PaymentModule
             $payment->setRequest($request);
 
             $paymentService = new PaymentService();
+            PrestaShopLogger::addLog('[Datafast] Llamando requestCheckoutId...', 1);
 
             $checkOutId = $paymentService->requestCheckoutId($payment);
+            PrestaShopLogger::addLog('[Datafast] checkOutId: ' . ($checkOutId ?: 'VACIO'), 1);
 
             if (empty($checkOutId)) {
+                PrestaShopLogger::addLog('[Datafast] checkOutId vacio - NO se mostrara opcion de pago', 3);
                 return [];
             }
 
@@ -1859,13 +1864,14 @@ class datafast extends PaymentModule
                 ->setAction($action)
                 ->setAdditionalInformation($setAdditionalInformation);
 
+            PrestaShopLogger::addLog('[Datafast] PaymentOption CREADO OK', 1);
             return [$newOption];
 
         } catch (\Exception $e) {
-            $this->logError("hookPaymentOptions Exception: " . $e->getMessage());
+            PrestaShopLogger::addLog('[Datafast] EXCEPTION: ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine(), 3);
             return [];
         } catch (\Error $e) {
-            $this->logError("hookPaymentOptions Error: " . $e->getMessage());
+            PrestaShopLogger::addLog('[Datafast] ERROR: ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine(), 3);
             return [];
         }
     }
