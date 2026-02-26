@@ -54,6 +54,7 @@ class datafast extends PaymentModule
 
 
         parent::__construct();
+        file_put_contents(_PS_ROOT_DIR_ . '/datafastLogs/datafast_debug.log', date('Y-m-d H:i:s') . " CONSTRUCTOR id=" . ($this->id ?? 'null') . "\n", FILE_APPEND);
 
         $this->displayName = $this->l('Botón de Datafast');
         $this->description = $this->l('Módulo de pagos de Datafast');
@@ -1740,6 +1741,7 @@ class datafast extends PaymentModule
 
     public function hookPaymentOptions($params)
     {
+        file_put_contents(_PS_ROOT_DIR_ . '/datafastLogs/datafast_debug.log', date('Y-m-d H:i:s') . " hookPaymentOptions CALLED\n", FILE_APPEND);
         try {
             $this->logError("[DEBUG-HOOK] hookPaymentOptions INICIO");
 
