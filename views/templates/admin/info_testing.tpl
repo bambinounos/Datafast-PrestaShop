@@ -10,8 +10,8 @@ table {
 </style>
 <script type="text/javascript" defer> 
 	function testing(pro, proName){   
-		var templateUrl = '/modules/datafast/api/ajax-test-call.php';
-		logFetch(templateUrl+'?pro='+pro).then(response=>{
+		var templateUrl = '{$base_url}index.php?fc=module&module=datafast&controller=ajaxtest';
+		logFetch(templateUrl+'&pro='+pro).then(response=>{
 			let idResult=(pro=='1' || pro=='2')?('resultProd'+pro):'resultTest'+pro;
 			let env = (pro=='1' || pro=='2')?('Producción'+' '+proName):'Pruebas' + ' ' +proName ;
 			let resultJson = JSON.parse(response,true);

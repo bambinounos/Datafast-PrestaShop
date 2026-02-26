@@ -11,8 +11,8 @@
             let token = $(obj).parent().find('label .wpwl-wrapper-registration-registrationId input');
             let isChecked = token.checked;
             var test = '{$removetoken}'; 
-             var removeurl = prestashop.urls.base_url  + 'modules/datafast/ajax-call.php';
-            logFetch(removeurl + '?token=' + token.val()).then(response => {
+             var removeurl = prestashop.urls.base_url  + 'index.php?fc=module&module=datafast&controller=ajaxcall';
+            logFetch(removeurl + '&token=' + token.val()).then(response => {
 
                 if (response == 'true') {
                     alert('Tarjeta eliminada exitosamente.');

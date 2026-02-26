@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+    <name>datafast</name>
+    <displayName><![CDATA[Datafast Payment Button]]></displayName>
+    <version><![CDATA[2.2.0]]></version>
+    <description><![CDATA[Datafast payment module]]></description>
+    <author><![CDATA[Sismetic]]></author>
+    <tab><![CDATA[payments_gateways]]></tab>
+    <confirmUninstall><![CDATA[Are you sure you want to uninstall the Datafast payment module?]]></confirmUninstall>
+    <is_configurable>1</is_configurable>
+    <need_instance>0</need_instance>
+    <limited_countries></limited_countries>
+</module>

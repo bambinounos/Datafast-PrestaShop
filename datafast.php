@@ -45,68 +45,24 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.1.0';
+        $this->version = '2.2.0';
         $this->author = 'Sismetic';
         $this->need_instance = 0;
         $this->is_configurable = 1;
+        $this->controllers = ['result', 'error', 'ajaxcall', 'ajaxtest'];
 
-        $this->ps_versions_compliancy = array('min' => '1.7.0', 'max' => _PS_VERSION_);
-
-
-        parent::__construct();
-        file_put_contents(_PS_ROOT_DIR_ . '/datafastLogs/datafast_debug.log', date('Y-m-d H:i:s') . " CONSTRUCTOR id=" . ($this->id ?? 'null') . "\n", FILE_APPEND);
-
-        $this->displayName = $this->l('Botón de Datafast');
-        $this->description = $this->l('Módulo de pagos de Datafast');
-        $this->confirmUninstall = $this->l('Está seguro que desea desinstalar el módulo de pagos de Datafast?');
-
+        $this->ps_versions_compliancy = ['min' => '1.7.6.0', 'max' => _PS_VERSION_];
 
         $this->bootstrap = true;
-        $this->clearCacheIfNeeded();
+        parent::__construct();
+
+        $this->displayName = $this->trans('Botón de Datafast', [], 'Modules.Datafast.Admin');
+        $this->description = $this->trans('Módulo de pagos de Datafast', [], 'Modules.Datafast.Admin');
+        $this->confirmUninstall = $this->trans('Está seguro que desea desinstalar el módulo de pagos de Datafast?', [], 'Modules.Datafast.Admin');
+
         $this->checkIfConfigurationIsProvided();
-        $this->checkForCurrency();
-        $this->checkForLogsFolder();
-
-    }
-
-    private function clearCacheIfNeeded(): void
-    {
-        try {
-            $logDir = _PS_ROOT_DIR_ . '/datafastLogs/';
-            $cacheFlag = $logDir . '.cache_cleared_' . $this->version;
-            if (!file_exists($cacheFlag)) {
-                $cacheDir = _PS_ROOT_DIR_ . '/var/cache/';
-                if (is_dir($cacheDir)) {
-                    $this->recursiveDeleteDir($cacheDir);
-                }
-                if (function_exists('opcache_reset')) {
-                    opcache_reset();
-                }
-                if (is_dir($logDir)) {
-                    @file_put_contents($cacheFlag, date('Y-m-d H:i:s'));
-                }
-            }
-        } catch (\Throwable $e) {
-        }
-    }
-
-    private function recursiveDeleteDir(string $dir): void
-    {
-        $items = @scandir($dir);
-        if (!$items) {
-            return;
-        }
-        foreach ($items as $item) {
-            if ($item === '.' || $item === '..') {
-                continue;
-            }
-            $path = $dir . '/' . $item;
-            if (is_dir($path)) {
-                $this->recursiveDeleteDir($path);
-                @rmdir($path);
-            } else {
-                @unlink($path);
-            }
+        if ($this->id && $this->active) {
+            $this->checkForCurrency();
         }
     }
 
@@ -1783,16 +1739,11 @@ class datafast extends PaymentModule
 
     public function hookPaymentOptions($params)
     {
-        file_put_contents(_PS_ROOT_DIR_ . '/datafastLogs/datafast_debug.log', date('Y-m-d H:i:s') . " hookPaymentOptions CALLED\n", FILE_APPEND);
         try {
-            $this->logError("[DEBUG-HOOK] hookPaymentOptions INICIO");
 
             $payment = new Payment();
 
             $request = $this->getDatafastRequest();
-            $this->logError("[DEBUG-HOOK] URL: " . $request->getUrlRequest());
-            $this->logError("[DEBUG-HOOK] EntityId: " . ($request->getEntityId() ? 'SET' : 'EMPTY'));
-            $this->logError("[DEBUG-HOOK] Bearer: " . ($request->getBearerToken() ? 'SET' : 'EMPTY'));
 
             $productInfo[] = $this->getProductInfo();
             $customerInfo = $this->getCustomerInfo();
@@ -1808,16 +1759,11 @@ class datafast extends PaymentModule
             $payment->setAmount($amount);
             $payment->setRequest($request);
 
-            $this->logError("[DEBUG-HOOK] Payment object built, calling requestCheckoutId...");
-
             $paymentService = new PaymentService();
 
             $checkOutId = $paymentService->requestCheckoutId($payment);
 
-            $this->logError("[DEBUG-HOOK] checkOutId result: '" . $checkOutId . "'");
-
             if (empty($checkOutId)) {
-                $this->logError("[DEBUG-HOOK] checkoutId VACIO - payment option NO se mostrará");
                 return [];
             }
 
@@ -1893,14 +1839,13 @@ class datafast extends PaymentModule
                 ->setAction($action)
                 ->setAdditionalInformation($setAdditionalInformation);
 
-            $this->logError("[DEBUG-HOOK] PaymentOption CREADO, retornando opción de pago");
             return [$newOption];
 
         } catch (\Exception $e) {
-            $this->logError("[DEBUG-HOOK] EXCEPTION: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine());
+            $this->logError("hookPaymentOptions Exception: " . $e->getMessage());
             return [];
         } catch (\Error $e) {
-            $this->logError("[DEBUG-HOOK] ERROR FATAL: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine());
+            $this->logError("hookPaymentOptions Error: " . $e->getMessage());
             return [];
         }
     }
