@@ -62,10 +62,52 @@ class datafast extends PaymentModule
 
 
         $this->bootstrap = true;
+        $this->clearCacheIfNeeded();
         $this->checkIfConfigurationIsProvided();
         $this->checkForCurrency();
         $this->checkForLogsFolder();
 
+    }
+
+    private function clearCacheIfNeeded(): void
+    {
+        try {
+            $logDir = _PS_ROOT_DIR_ . '/datafastLogs/';
+            $cacheFlag = $logDir . '.cache_cleared_' . $this->version;
+            if (!file_exists($cacheFlag)) {
+                $cacheDir = _PS_ROOT_DIR_ . '/var/cache/';
+                if (is_dir($cacheDir)) {
+                    $this->recursiveDeleteDir($cacheDir);
+                }
+                if (function_exists('opcache_reset')) {
+                    opcache_reset();
+                }
+                if (is_dir($logDir)) {
+                    @file_put_contents($cacheFlag, date('Y-m-d H:i:s'));
+                }
+            }
+        } catch (\Throwable $e) {
+        }
+    }
+
+    private function recursiveDeleteDir(string $dir): void
+    {
+        $items = @scandir($dir);
+        if (!$items) {
+            return;
+        }
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $path = $dir . '/' . $item;
+            if (is_dir($path)) {
+                $this->recursiveDeleteDir($path);
+                @rmdir($path);
+            } else {
+                @unlink($path);
+            }
+        }
     }
 
     public function checkIfConfigurationIsProvided(): void
