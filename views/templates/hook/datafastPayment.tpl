@@ -1,5 +1,6 @@
 <section>
     <script type="text/javascript">
+    console.log('[Datafast] Template JS ejecutándose');
 
     function deleteToken(obj) {
         if (confirm("¿Deseas eliminar esta tarjeta?")) {
@@ -47,6 +48,7 @@
 
     var wpwlOptions = {
         onReady: function(onReady) {
+            console.log('[Datafast] Widget onReady ejecutado');
 
             {if $customertoken == '1'}
                 var createRegistrationHtml = '<div class="customLabel">Desea guardar de manera segura sus datos?</div><div class="customInput">' +
@@ -124,42 +126,29 @@
         }
     }
 
-    /**
-     * Dynamically load the Datafast widget script when the payment option is selected.
-     * This avoids blocking PS9's checkout JS and ensures the widget initializes
-     * when its container is visible.
-     */
-    function loadDatafastWidget() {
-        if (document.getElementById('datafastWidgetScript')) {
-            return; // Already loaded
-        }
-        var script = document.createElement('script');
-        script.id = 'datafastWidgetScript';
-        script.src = '{$checkScript|escape:"javascript":"UTF-8"}';
-        document.body.appendChild(script);
-    }
+    console.log('[Datafast] wpwlOptions definido, cargando widget con defer...');
 
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('[Datafast] DOMContentLoaded');
         var datafastRadio = document.querySelector("input[data-module-name='datafast']");
+        console.log('[Datafast] Radio button encontrado:', !!datafastRadio);
+
         if (!datafastRadio) return;
 
         var confirmationBtn = document.querySelector('#payment-confirmation button[type="submit"]');
 
-        // When Datafast is selected: load widget and hide Place Order button
         datafastRadio.addEventListener('change', function() {
             if (this.checked) {
-                loadDatafastWidget();
+                console.log('[Datafast] Opción seleccionada');
                 if (confirmationBtn) confirmationBtn.style.display = 'none';
             }
         });
 
-        // If Datafast is already pre-selected (e.g., only payment option)
         if (datafastRadio.checked) {
-            loadDatafastWidget();
+            console.log('[Datafast] Pre-seleccionado');
             if (confirmationBtn) confirmationBtn.style.display = 'none';
         }
 
-        // Restore Place Order button when ANY other payment option is selected
         document.querySelectorAll("input[name='payment-option']").forEach(function(radio) {
             if (radio.dataset.moduleName !== 'datafast') {
                 radio.addEventListener('change', function() {
@@ -170,6 +159,9 @@
     });
 
     </script>
+    <script defer src="{$checkScript|escape:'html':'UTF-8'}"></script>
+    <form action="{$action|escape:'html':'UTF-8'}" class="paymentWidgets" id="datafastPaymentForm" data-brands="VISA MASTER AMEX DINERS DISCOVER ALIA">
+    </form>
     <style>
         .wpwl-wrapper-registration-registrationId{
             width: 8.33333333% !important;

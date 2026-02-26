@@ -45,7 +45,7 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.3.0';
+        $this->version = '2.3.1';
         $this->author = 'Sismetic';
         $this->need_instance = 0;
         $this->is_configurable = 1;
@@ -1865,13 +1865,10 @@ class datafast extends PaymentModule
             $this->smarty->assign("removetoken", $removetoken);
             $setAdditionalInformation = $this->fetch('module:datafast/views/templates/hook/datafastPayment.tpl');
 
-            $formHtml = '<form action="' . htmlspecialchars($action, ENT_QUOTES, 'UTF-8') . '" class="paymentWidgets" id="datafastPaymentForm" data-brands="VISA MASTER AMEX DINERS DISCOVER ALIA"></form>';
-
             $newOption = new PaymentOption();
             $newOption->setModuleName($this->name)
                 ->setCallToActionText($this->trans('Pago con Datafast', array(), 'Pago con Datafast'))
                 ->setAction($action)
-                ->setForm($formHtml)
                 ->setAdditionalInformation($setAdditionalInformation);
 
             PrestaShopLogger::addLog('[Datafast] PaymentOption CREADO OK', 1);
