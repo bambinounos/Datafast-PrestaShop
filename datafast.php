@@ -45,7 +45,7 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.2.1';
+        $this->version = '2.2.2';
         $this->author = 'Sismetic';
         $this->need_instance = 0;
         $this->is_configurable = 1;
@@ -74,8 +74,12 @@ class datafast extends PaymentModule
     {
         $requiredHooks = ['paymentOptions', 'paymentReturn', 'displayHeader', 'actionOrderStatusUpdate'];
         foreach ($requiredHooks as $hook) {
-            if (!$this->isRegisteredInHook($hook)) {
-                $this->registerHook($hook);
+            try {
+                if (!$this->isRegisteredInHook($hook)) {
+                    $this->registerHook($hook);
+                }
+            } catch (\Throwable $e) {
+                // Hook already exists in DB for another shop context - safe to ignore
             }
         }
     }
