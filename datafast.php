@@ -45,7 +45,7 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.3.1';
+        $this->version = '2.3.2';
         $this->author = 'Sismetic';
         $this->need_instance = 0;
         $this->is_configurable = 1;
@@ -2047,7 +2047,10 @@ class datafast extends PaymentModule
 
     public function hookDisplayHeader($params)
     {
-
+        $controller = $this->context->controller;
+        $controllerClass = get_class($controller);
+        PrestaShopLogger::addLog('[Datafast] hookDisplayHeader - controller=' . $controllerClass . ' active=' . ($this->active ? 'SI' : 'NO'), 1);
+        return '<!-- DATAFAST_MODULE_LOADED controller=' . $controllerClass . ' version=' . $this->version . ' active=' . ($this->active ? '1' : '0') . ' -->';
     }
 
     function searchTransactionByPaymentId($data)
