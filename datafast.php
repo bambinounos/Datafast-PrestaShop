@@ -44,7 +44,7 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.5.1';
+        $this->version = '2.5.2';
         $this->author = 'Sismetic';
         $this->need_instance = 0;
         $this->is_configurable = 1;
@@ -837,6 +837,17 @@ class datafast extends PaymentModule
 
         if ($formUpdate !== 1)
         {
+            /* Polyfill: confirm_link fue removido en PS9 pero list_action_delete.tpl lo sigue usando */
+            $this->_html .= "<script type='text/javascript'>
+                if (typeof confirm_link === 'undefined') {
+                    window.confirm_link = function(header, msg, yes, no, url, cancel) {
+                        if (confirm(msg)) {
+                            document.location.href = url;
+                        }
+                    };
+                }
+            </script>";
+
             $this->context->smarty->assign('module_dir', $this->_path);
             $this->context->smarty->assign('web_url', $this->context->link->getModuleLink($this->name, 'status', array(), true));
             $this->_html .= $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
@@ -905,6 +916,14 @@ class datafast extends PaymentModule
         } 
         
         $this->_html .= "<script type='text/javascript'>
+                /* Polyfill: confirm_link fue removido en PS9 pero list_action_delete.tpl lo sigue usando */
+                if (typeof confirm_link === 'undefined') {
+                    window.confirm_link = function(header, msg, yes, no, url, cancel) {
+                        if (confirm(msg)) {
+                            document.location.href = url;
+                        }
+                    };
+                }
                 window.addEventListener('load', (event) => {
                     console.log('Running...');
 
