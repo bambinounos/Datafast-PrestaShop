@@ -44,7 +44,7 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.5.0';
+        $this->version = '2.5.1';
         $this->author = 'Sismetic';
         $this->need_instance = 0;
         $this->is_configurable = 1;
@@ -904,7 +904,7 @@ class datafast extends PaymentModule
                 ];
         } 
         
-        echo "<script type='text/javascript'>
+        $this->_html .= "<script type='text/javascript'>
                 window.addEventListener('load', (event) => {
                     console.log('Running...');
 
