@@ -19,6 +19,7 @@ Módulo de pagos de **Datafast** para PrestaShop. Permite procesar pagos con tar
 - Ambientes de prueba y producción
 - Recuperación de transacciones
 - Panel de transacciones en el backoffice
+- **Links de pago** — cobra sin datáfono: genera un enlace, envíalo por WhatsApp/Telegram y el cliente paga **sin registrarse** en la tienda
 
 ## Instalación
 
@@ -37,7 +38,53 @@ Módulo de pagos de **Datafast** para PrestaShop. Permite procesar pagos con tar
 - **ECI**: Valor de seguridad ECI (SHOPPER_ECI)
 - **PREFIJO TRX**: Prefijo para identificar transacciones
 
+## Links de Pago (cobra sin datáfono)
+
+Permite cobrar a clientes **sin un datáfono físico** y **sin que el cliente se registre** en la tienda. Ideal para ventas en local físico o a distancia, compartiendo un enlace por WhatsApp, Telegram o correo.
+
+**Flujo:**
+1. En *Módulos → Datafast → Configurar → "Links de Pago"*, genera un link indicando un **monto libre** (con o sin IVA) o seleccionando **productos del catálogo**.
+2. Copia la URL o usa el botón **"Enviar por WhatsApp"** y compártela con tu cliente.
+3. El cliente abre el link (sin iniciar sesión), ingresa sus datos básicos (nombre, correo, cédula, teléfono) y paga con su tarjeta mediante el widget seguro de Datafast.
+4. Al aprobarse el pago se crea automáticamente un **pedido** con un cliente invitado, se descuenta stock (en links de catálogo) y la transacción queda registrada.
+
+**Características:**
+- Reutiliza las **mismas credenciales Dataweb** del botón de pago (no requiere credenciales adicionales).
+- Token opaco e irrepetible; el monto se valida del lado del servidor (no manipulable desde la URL).
+- Expiración configurable y de un solo uso (no permite pagos duplicados); verificación de monto con reverso automático ante discrepancias.
+- Listado de links generados con su estado (pendiente, pagado, expirado, cancelado) y enlace directo al pedido.
+
+**Configuración opcional** (con valores por defecto al instalar):
+
+| Clave | Descripción | Default |
+|-------|-------------|---------|
+| `DATAFAST_PAYLINK_EXPIRY_DAYS` | Días de validez del link | 7 |
+| `DATAFAST_PAYLINK_IVA_RATE` | Tasa de IVA para el desglose de montos | 0.15 |
+| `DATAFAST_PAYLINK_CREATE_ORDER` | Crear pedido al pagar | activado |
+| `DATAFAST_PAYLINK_GENERIC_PRODUCT` | Producto genérico (virtual) para links de monto libre | se crea automáticamente |
+
 ## Changelog
+
+### v2.6.0 (2026-06-07)
+Nueva funcionalidad: **Links de Pago** (cobra sin datáfono / sin registro del cliente).
+
+#### Funcionalidad
+- Generador de links de pago en el backoffice (*Configurar → Links de Pago*): monto libre (con/sin IVA) o productos del catálogo, con botón "Enviar por WhatsApp" y listado de links con su estado.
+- Página pública de pago **sin login** (`controllers/front/paylink.php`): formulario mínimo del pagador + widget COPYandPAY de Datafast.
+- Confirmación y creación de **pedido invitado** (`controllers/front/paylinkresult.php`): cliente `is_guest`, dirección, carrito y `validateOrder`; descuento de stock en links de catálogo.
+- Nueva tabla `ps_datafast_paymentlinks` y helper `DatafastPaymentLink`; script de actualización `upgrade/upgrade-2.6.0.php`.
+- Producto genérico virtual + `SpecificPrice` por carrito para fijar el total exacto en links de monto libre.
+
+#### Seguridad
+- Token opaco de 256 bits; monto siempre resuelto del lado del servidor (no manipulable por URL).
+- Expiración configurable, un solo uso e idempotencia (sin pedidos duplicados al recargar).
+- Verificación de monto contra la respuesta de Datafast con reverso automático ante discrepancias.
+
+#### Reutilización
+- Reutiliza las credenciales Dataweb existentes y los servicios `Config`/`PaymentService`/modelos **sin modificar el flujo de checkout actual** (todo es aditivo).
+
+### v2.2.0 – v2.5.3 (2026-02 / 2026-03)
+Correcciones de compatibilidad con **PrestaShop 9**: creación de `config.xml`, conversión de los endpoints AJAX a `ModuleFrontController` (`ajaxcall`, `ajaxtest`), uso de `$this->trans()`, constructor liviano sin I/O de archivos en el arranque, y arreglos del widget de pago y del botón de eliminar tipo de crédito (polyfill de `confirm_link`, error `headers already sent`).
 
 ### v2.1.0 (2026-02-25)
 Auditoría de seguridad y compatibilidad con la documentación oficial de la API de Datafast.

@@ -13,6 +13,7 @@ use datafast\payment\PaymentService;
 use datafast\payment\datafast\payment\Config; 
 use datafast\payment\datafast\payment\model\Payment;
 use datafast\payment\model\Environment;
+use datafast\payment\model\DatafastPaymentLink;
 
 include_once __DIR__ . '/src/classes/datafast/payment/model/Constants.php';
 include_once __DIR__ . '/src/classes/datafast/payment/model/Environment.php';
@@ -23,6 +24,7 @@ include_once __DIR__ . '/src/classes/datafast/payment/model/ProductInfo.php';
 include_once __DIR__ . '/src/classes/datafast/payment/model/CartInfo.php';
 include_once __DIR__ . '/src/classes/datafast/payment/model/CustomerInfo.php';
 include_once __DIR__ . '/src/classes/datafast/payment/model/DatafastRequest.php';
+include_once __DIR__ . '/src/classes/datafast/payment/model/DatafastPaymentLink.php';
 include_once __DIR__ . '/src/classes/datafast/payment/model/DatafastInstallments.php';
 include_once __DIR__ . '/src/classes/datafast/payment/PaymentService.php';
 include_once __DIR__ . '/src/classes/datafast/payment/datafastDB.php';
@@ -44,11 +46,11 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.5.3';
+        $this->version = '2.6.0';
         $this->author = 'Sismetic';
         $this->need_instance = 0;
         $this->is_configurable = 1;
-        $this->controllers = ['result', 'error', 'ajaxcall', 'ajaxtest'];
+        $this->controllers = ['result', 'error', 'ajaxcall', 'ajaxtest', 'paylink', 'paylinkresult'];
 
         $this->ps_versions_compliancy = ['min' => '1.7.6.0', 'max' => _PS_VERSION_];
 
@@ -183,6 +185,17 @@ class datafast extends PaymentModule
         Configuration::updateValue('DATAFAST_VERSION', $this->version);
         Configuration::updateValue('DATAFAST_DEV', true);
 
+        // Defaults para Links de Pago (cobro sin datáfono / sin registro del cliente)
+        if (Configuration::get('DATAFAST_PAYLINK_EXPIRY_DAYS') === false) {
+            Configuration::updateValue('DATAFAST_PAYLINK_EXPIRY_DAYS', 7);
+        }
+        if (Configuration::get('DATAFAST_PAYLINK_IVA_RATE') === false) {
+            Configuration::updateValue('DATAFAST_PAYLINK_IVA_RATE', 0.15);
+        }
+        if (Configuration::get('DATAFAST_PAYLINK_CREATE_ORDER') === false) {
+            Configuration::updateValue('DATAFAST_PAYLINK_CREATE_ORDER', 1);
+        }
+
         PrestaShopLogger::addLog('Instalación de módulo de pagos de Datafast', 2);
 
 
@@ -215,8 +228,13 @@ class datafast extends PaymentModule
             $this->_errors[] = $this->l('No se pudo crear la tabla de tokenizacion de clientes para el módulo de Datafast');
             return false;
         }
-        
-        
+
+        if (!$this->createTablePaymentLinks()) {
+            $this->_errors[] = $this->l('No se pudo crear la tabla de links de pago para el módulo de Datafast');
+            return false;
+        }
+
+
         if (parent::install()
             && $this->registerHook('paymentOptions')
             && $this->registerHook('paymentReturn')
@@ -399,6 +417,40 @@ class datafast extends PaymentModule
         );
     }
 
+    public function createTablePaymentLinks()
+    {
+        return Db::getInstance()->execute(
+            'CREATE TABLE IF NOT EXISTS ' . _DB_PREFIX_ . 'datafast_paymentlinks (
+            `id_paymentlink` INTEGER(11) NOT NULL PRIMARY KEY AUTO_INCREMENT,
+            `token` VARCHAR (64) NOT NULL,
+            `reference` VARCHAR (191) DEFAULT NULL,
+            `description` TEXT DEFAULT NULL,
+            `amount` DECIMAL(20,6) NOT NULL,
+            `amount_iva0` DECIMAL(20,6) DEFAULT 0,
+            `amount_ivaimp` DECIMAL(20,6) DEFAULT 0,
+            `amount_iva` DECIMAL(20,6) DEFAULT 0,
+            `currency` VARCHAR (3) NOT NULL DEFAULT \'USD\',
+            `link_type` VARCHAR (12) NOT NULL DEFAULT \'amount\',
+            `product_refs` TEXT DEFAULT NULL,
+            `status` VARCHAR (20) NOT NULL DEFAULT \'pending\',
+            `id_order` INTEGER(11) DEFAULT NULL,
+            `id_cart` INTEGER(11) DEFAULT NULL,
+            `id_transaction` VARCHAR (100) DEFAULT NULL,
+            `checkout_id` VARCHAR (100) DEFAULT NULL,
+            `payer_name` VARCHAR (191) DEFAULT NULL,
+            `payer_email` VARCHAR (191) DEFAULT NULL,
+            `payer_dni` VARCHAR (20) DEFAULT NULL,
+            `payer_phone` VARCHAR (40) DEFAULT NULL,
+            `expires_at` DATETIME DEFAULT NULL,
+            `paid_at` DATETIME DEFAULT NULL,
+            `created_at` DATETIME DEFAULT NULL,
+            `updated_at` DATETIME DEFAULT NULL,
+            UNIQUE KEY `uniq_token` (`token`),
+            KEY `idx_status` (`status`))
+            ENGINE = ' . _MYSQL_ENGINE_ . ' '
+        );
+    }
+
    
 
     public function uninstall()
@@ -418,6 +470,10 @@ class datafast extends PaymentModule
         Configuration::deleteByName('DATAFAST_PRODULR');
         Configuration::deleteByName('DATAFAST_DEVURL');
         Configuration::deleteByName('DATAFAST_VERSION');
+        Configuration::deleteByName('DATAFAST_PAYLINK_EXPIRY_DAYS');
+        Configuration::deleteByName('DATAFAST_PAYLINK_IVA_RATE');
+        Configuration::deleteByName('DATAFAST_PAYLINK_CREATE_ORDER');
+        Configuration::deleteByName('DATAFAST_PAYLINK_GENERIC_PRODUCT');
 
 
         PrestaShopLogger::addLog('Desinstalando el módulo de pagos de Datafast', 2);
@@ -428,6 +484,8 @@ class datafast extends PaymentModule
     public function getContent()
     {
         $this->ensureHooksRegistered();
+        // Garantiza la tabla de links de pago en instalaciones existentes (idempotente)
+        $this->createTablePaymentLinks();
 
         /**
          * If values have been submitted in the form, process.
@@ -471,7 +529,17 @@ class datafast extends PaymentModule
                 $this->_html .= $this->displayConfirmation($this->trans('Settings updated', array(), 'Admin.Notifications.Success'));
             }
 
-        } 
+        }
+        elseif (Tools::isSubmit('submitCreatePaymentLink')) {
+            $this->_html .= $this->processCreatePaymentLink();
+        }
+        elseif (Tools::isSubmit('cancelPaymentLink')) {
+            $linkToken = (string) Tools::getValue('link_token');
+            if ($linkToken !== '') {
+                DatafastPaymentLink::markStatus($linkToken, DatafastPaymentLink::STATUS_CANCELLED);
+                $this->_html .= $this->displayConfirmation('Link de pago cancelado.');
+            }
+        }
         else if (Tools::isSubmit('updatedatafast')) {
             $formUpdate=1;
             $this->_html .= $this->renderInstallmentsForm((int) Tools::getValue('id_installment'));
@@ -842,6 +910,8 @@ class datafast extends PaymentModule
             $this->_html .= $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
 
             $this->_html .= $this->getTransactionsPreview();
+            $this->_html .= $this->getPaymentLinksForm();
+            $this->_html .= $this->getPaymentLinksList();
             $this->_html .= $this->getConfigForm();
             $this->_html .= $this->getConfigFormInstallments();
 
@@ -1681,7 +1751,280 @@ class datafast extends PaymentModule
         return $this->display(__FILE__, 'views/templates/admin/transactionsGrid.tpl');
     }
 
- 
+    /* ===================== LINKS DE PAGO ===================== */
+
+    /**
+     * Procesa la creación de un link de pago desde el formulario del admin.
+     * Devuelve el HTML de confirmación (con la URL para copiar/WhatsApp) o el error.
+     */
+    protected function processCreatePaymentLink(): string
+    {
+        $linkType = (Tools::getValue('paylink_type') === 'catalog')
+            ? DatafastPaymentLink::TYPE_CATALOG
+            : DatafastPaymentLink::TYPE_AMOUNT;
+        $reference = trim((string) Tools::getValue('paylink_reference'));
+        $description = trim((string) Tools::getValue('paylink_description'));
+        $expiryDays = (int) Tools::getValue('paylink_expiry_days');
+        if ($expiryDays <= 0) {
+            $expiryDays = (int) Configuration::get('DATAFAST_PAYLINK_EXPIRY_DAYS');
+        }
+        if ($expiryDays <= 0) {
+            $expiryDays = 7;
+        }
+
+        $data = [
+            'reference' => $reference,
+            'description' => $description,
+            'link_type' => $linkType,
+            'currency' => 'USD',
+            'expires_at' => date('Y-m-d H:i:s', strtotime('+' . $expiryDays . ' days')),
+        ];
+
+        $error = '';
+
+        if ($linkType === DatafastPaymentLink::TYPE_CATALOG) {
+            $refs = json_decode((string) Tools::getValue('paylink_product_refs'), true);
+            if (!is_array($refs) || count($refs) === 0) {
+                $error = 'Debe agregar al menos un producto al link.';
+            } else {
+                $amounts = $this->computeCatalogAmounts($refs);
+                if ($amounts['total'] <= 0) {
+                    $error = 'El total de los productos seleccionados es 0.';
+                } else {
+                    $data['amount'] = $amounts['total'];
+                    $data['amount_ivaimp'] = $amounts['ivaimp'];
+                    $data['amount_iva0'] = $amounts['iva0'];
+                    $data['amount_iva'] = $amounts['iva'];
+                    $data['product_refs'] = json_encode($amounts['refs']);
+                }
+            }
+        } else {
+            $amount = (float) str_replace(',', '.', (string) Tools::getValue('paylink_amount'));
+            if ($amount <= 0) {
+                $error = 'Ingrese un monto válido mayor a 0.';
+            } else {
+                $taxMode = (Tools::getValue('paylink_tax_mode') === 'no_iva') ? 'no_iva' : 'iva';
+                $breakdown = $this->computeIvaBreakdown($amount, $taxMode);
+                $data['amount'] = round($amount, 2);
+                $data['amount_ivaimp'] = $breakdown['ivaimp'];
+                $data['amount_iva0'] = $breakdown['iva0'];
+                $data['amount_iva'] = $breakdown['iva'];
+            }
+        }
+
+        if ($error !== '') {
+            return $this->displayError($error);
+        }
+
+        $token = DatafastPaymentLink::createLink($data);
+        $url = $this->buildPaymentLinkPublicUrl($token);
+        $waText = 'Paga tu compra' . ($reference !== '' ? ' (' . $reference . ')' : '')
+            . ' por $' . number_format((float) $data['amount'], 2) . ': ' . $url;
+
+        $this->context->smarty->assign([
+            'created_url' => $url,
+            'created_wa_url' => 'https://wa.me/?text=' . rawurlencode($waText),
+            'created_amount' => number_format((float) $data['amount'], 2),
+            'created_reference' => $reference,
+        ]);
+
+        return $this->display(__FILE__, 'views/templates/admin/paymentLinkCreated.tpl');
+    }
+
+    /**
+     * Desglose de IVA a partir de un monto bruto.
+     * @return array{iva0: float, ivaimp: float, iva: float}
+     */
+    protected function computeIvaBreakdown(float $total, string $taxMode): array
+    {
+        if ($taxMode === 'no_iva') {
+            return ['iva0' => round($total, 2), 'ivaimp' => 0.0, 'iva' => 0.0];
+        }
+        $rate = (float) Configuration::get('DATAFAST_PAYLINK_IVA_RATE');
+        if ($rate <= 0) {
+            $rate = 0.15;
+        }
+        $base = round($total / (1 + $rate), 2);
+
+        return ['iva0' => 0.0, 'ivaimp' => $base, 'iva' => round($total - $base, 2)];
+    }
+
+    /**
+     * Calcula totales y desglose de IVA para un link basado en productos del catálogo.
+     * @return array{total: float, ivaimp: float, iva0: float, iva: float, refs: array}
+     */
+    protected function computeCatalogAmounts(array $refs): array
+    {
+        $total = 0.0;
+        $ivaimp = 0.0;
+        $iva0 = 0.0;
+        $ivaSum = 0.0;
+        $clean = [];
+
+        foreach ($refs as $ref) {
+            $idProduct = (int) ($ref['id_product'] ?? 0);
+            $qty = (int) ($ref['qty'] ?? 0);
+            if ($idProduct <= 0 || $qty <= 0) {
+                continue;
+            }
+            $priceWt = (float) Product::getPriceStatic($idProduct, true, 0, 6);
+            $priceNet = (float) Product::getPriceStatic($idProduct, false, 0, 6);
+            if ($priceWt <= 0) {
+                continue;
+            }
+            $lineWt = $priceWt * $qty;
+            $lineNet = $priceNet * $qty;
+            $total += $lineWt;
+            if ($priceWt > $priceNet + 0.00001) {
+                $ivaimp += $lineNet;
+                $ivaSum += ($lineWt - $lineNet);
+            } else {
+                $iva0 += $lineNet;
+            }
+            $clean[] = ['id_product' => $idProduct, 'qty' => $qty];
+        }
+
+        return [
+            'total' => round($total, 2),
+            'ivaimp' => round($ivaimp, 2),
+            'iva0' => round($iva0, 2),
+            'iva' => round($ivaSum, 2),
+            'refs' => $clean,
+        ];
+    }
+
+    protected function buildPaymentLinkPublicUrl(string $token): string
+    {
+        return $this->context->link->getModuleLink($this->name, 'paylink', ['t' => $token], true);
+    }
+
+    protected function paymentLinkStatusLabel(string $status): string
+    {
+        $map = [
+            DatafastPaymentLink::STATUS_PENDING => 'Pendiente',
+            DatafastPaymentLink::STATUS_PAID => 'Pagado',
+            DatafastPaymentLink::STATUS_EXPIRED => 'Expirado',
+            DatafastPaymentLink::STATUS_CANCELLED => 'Cancelado',
+        ];
+
+        return $map[$status] ?? $status;
+    }
+
+    private function getCatalogProductsForSelect(): array
+    {
+        $idLang = (int) $this->context->language->id;
+        $rows = Product::getSimpleProducts($idLang);
+        $out = [];
+        if (is_array($rows)) {
+            foreach ($rows as $r) {
+                $out[] = ['id' => (int) $r['id_product'], 'name' => $r['name']];
+            }
+        }
+
+        return $out;
+    }
+
+    protected function getPaymentLinksForm()
+    {
+        $ivaRate = (float) Configuration::get('DATAFAST_PAYLINK_IVA_RATE');
+        if ($ivaRate <= 0) {
+            $ivaRate = 0.15;
+        }
+        $expiryDefault = (int) Configuration::get('DATAFAST_PAYLINK_EXPIRY_DAYS');
+        if ($expiryDefault <= 0) {
+            $expiryDefault = 7;
+        }
+
+        $this->context->smarty->assign([
+            'paylink_form_action' => AdminController::$currentIndex . '&configure=' . $this->name . '&token=' . Tools::getAdminTokenLite('AdminModules'),
+            'paylink_products' => $this->getCatalogProductsForSelect(),
+            'paylink_iva_rate_pct' => (int) round($ivaRate * 100),
+            'paylink_expiry_default' => $expiryDefault,
+        ]);
+
+        return $this->display(__FILE__, 'views/templates/admin/paymentLinks.tpl');
+    }
+
+    protected function getPaymentLinksList()
+    {
+        $links = DatafastPaymentLink::listLinks(200);
+        $data = [];
+        foreach ($links as $row) {
+            $token = (string) $row['token'];
+            $url = $this->buildPaymentLinkPublicUrl($token);
+            $hrefOrder = '';
+            if (!empty($row['id_order'])) {
+                $hrefOrder = $this->context->link->getAdminLink('AdminOrders', true, [], ['id_order' => (int) $row['id_order'], 'vieworder' => 1]);
+            }
+            $data[] = [
+                'created_at' => $row['created_at'],
+                'reference' => $row['reference'],
+                'amount' => number_format((float) $row['amount'], 2),
+                'status' => $row['status'],
+                'status_label' => $this->paymentLinkStatusLabel((string) $row['status']),
+                'payer_email' => $row['payer_email'],
+                'id_order' => $row['id_order'],
+                'href_order' => $hrefOrder,
+                'url' => $url,
+                'wa_url' => 'https://wa.me/?text=' . rawurlencode('Paga tu compra: ' . $url),
+                'expires_at' => $row['expires_at'],
+                'is_pending' => ($row['status'] === DatafastPaymentLink::STATUS_PENDING),
+                'cancel_url' => AdminController::$currentIndex . '&configure=' . $this->name . '&cancelPaymentLink&link_token=' . urlencode($token) . '&token=' . Tools::getAdminTokenLite('AdminModules'),
+            ];
+        }
+
+        $this->context->smarty->assign(['paylinks' => $data]);
+
+        return $this->display(__FILE__, 'views/templates/admin/paymentLinksGrid.tpl');
+    }
+
+    /**
+     * Obtiene (o crea) el producto genérico virtual usado para materializar los
+     * pedidos de links de "monto libre". Sin impuesto: el total de la orden se
+     * fija al monto del link mediante SpecificPrice por carrito.
+     */
+    public function getOrCreateGenericProductId(): int
+    {
+        $id = (int) Configuration::get('DATAFAST_PAYLINK_GENERIC_PRODUCT');
+        if ($id > 0) {
+            $existing = new Product($id);
+            if (Validate::isLoadedObject($existing)) {
+                return $id;
+            }
+        }
+
+        $homeCategory = (int) Configuration::get('PS_HOME_CATEGORY');
+        $languages = Language::getLanguages(false);
+
+        $product = new Product();
+        foreach ($languages as $lang) {
+            $product->name[(int) $lang['id_lang']] = 'Venta por Link de Pago (Datafast)';
+            $product->link_rewrite[(int) $lang['id_lang']] = 'venta-link-datafast';
+        }
+        $product->price = 0;
+        $product->id_tax_rules_group = 0;
+        $product->active = 1;
+        $product->visibility = 'none';
+        $product->available_for_order = 1;
+        $product->show_price = 0;
+        $product->is_virtual = 1;
+        $product->indexed = 0;
+        $product->id_category_default = $homeCategory;
+        $product->minimal_quantity = 1;
+        $product->add();
+
+        if ($product->id) {
+            $product->addToCategories([$homeCategory]);
+            StockAvailable::setProductDependsOnStock((int) $product->id, false);
+            StockAvailable::setProductOutOfStock((int) $product->id, 1);
+            StockAvailable::setQuantity((int) $product->id, 0, 999999);
+            Configuration::updateValue('DATAFAST_PAYLINK_GENERIC_PRODUCT', (int) $product->id);
+
+            return (int) $product->id;
+        }
+
+        return 0;
+    }
 
     public function hookPaymentReturn($params)
     {
