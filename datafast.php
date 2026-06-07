@@ -46,7 +46,7 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.6.0';
+        $this->version = '2.6.1';
         $this->author = 'Sismetic';
         $this->need_instance = 0;
         $this->is_configurable = 1;
@@ -2015,7 +2015,7 @@ class datafast extends PaymentModule
 
         if ($product->id) {
             $product->addToCategories([$homeCategory]);
-            StockAvailable::setProductDependsOnStock((int) $product->id, false);
+            // Producto virtual orderable: permitir pedidos y stock holgado (sin control real).
             StockAvailable::setProductOutOfStock((int) $product->id, 1);
             StockAvailable::setQuantity((int) $product->id, 0, 999999);
             Configuration::updateValue('DATAFAST_PAYLINK_GENERIC_PRODUCT', (int) $product->id);

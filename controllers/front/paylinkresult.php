@@ -15,7 +15,6 @@ use datafast\payment\model\DatafastPaymentLink;
 class datafastPaylinkresultModuleFrontController extends ModuleFrontController
 {
     public $auth = false;
-    public $guestAllowed = true;
     public $ssl = true;
 
     public function initContent()

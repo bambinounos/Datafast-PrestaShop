@@ -54,6 +54,8 @@ Permite cobrar a clientes **sin un datáfono físico** y **sin que el cliente se
 - Expiración configurable y de un solo uso (no permite pagos duplicados); verificación de monto con reverso automático ante discrepancias.
 - Listado de links generados con su estado (pendiente, pagado, expirado, cancelado) y enlace directo al pedido.
 
+> 📘 **Guía para el personal de tienda:** pasos para generar y enviar links, ver [`docs/GUIA-LINKS-DE-PAGO.md`](docs/GUIA-LINKS-DE-PAGO.md).
+
 **Configuración opcional** (con valores por defecto al instalar):
 
 | Clave | Descripción | Default |
@@ -64,6 +66,11 @@ Permite cobrar a clientes **sin un datáfono físico** y **sin que el cliente se
 | `DATAFAST_PAYLINK_GENERIC_PRODUCT` | Producto genérico (virtual) para links de monto libre | se crea automáticamente |
 
 ## Changelog
+
+### v2.6.1 (2026-06-07)
+Correcciones de compatibilidad con **PrestaShop 9** detectadas al verificar contra el core 9.0.3:
+- Eliminada la llamada a `StockAvailable::setProductDependsOnStock()` (método inexistente en PS9) en la creación del producto genérico, que hacía que los links de **monto libre** cayeran siempre a modo solo-registro en vez de crear el pedido. La orderabilidad del producto virtual se mantiene con `setProductOutOfStock` + `setQuantity`.
+- Removida la propiedad `$guestAllowed` de los controladores públicos (no existe en el core PS9; el acceso sin login se controla con `$auth = false`).
 
 ### v2.6.0 (2026-06-07)
 Nueva funcionalidad: **Links de Pago** (cobra sin datáfono / sin registro del cliente).
