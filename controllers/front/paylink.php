@@ -22,6 +22,15 @@ class datafastPaylinkModuleFrontController extends ModuleFrontController
     {
         parent::initContent();
 
+        // Los temas classic de PS8/PS9 definen la función Smarty {renderLogo} en
+        // _partials/helpers.tpl y _partials/header.tpl la llama. Las páginas del
+        // módulo no pasan por el layout del tema (que carga helpers antes), así que
+        // se incluye aquí cuando el tema lo provee.
+        $this->context->smarty->assign(
+            'datafast_theme_has_helpers',
+            is_file(_PS_THEME_DIR_ . 'templates/_partials/helpers.tpl')
+        );
+
         $token = trim((string) Tools::getValue('t'));
         $link = DatafastPaymentLink::getByToken($token);
 

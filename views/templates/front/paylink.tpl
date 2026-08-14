@@ -13,6 +13,9 @@
 <main>
     <header id="header">
         {block name='header'}
+            {if $datafast_theme_has_helpers}
+                {include file='_partials/helpers.tpl'}
+            {/if}
             {include file='_partials/header.tpl'}
         {/block}
     </header>

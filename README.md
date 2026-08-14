@@ -67,6 +67,36 @@ Permite cobrar a clientes **sin un datáfono físico** y **sin que el cliente se
 
 ## Changelog
 
+### v2.6.2 (2026-08-14)
+Corrección crítica: las páginas públicas del módulo (link de pago, comprobante y página
+de error) caían con **HTTP 500** en PrestaShop 8.2+/9.x con el tema classic.
+
+#### Causa raíz
+Los temas classic 2.2+ (PS 8.x) y 3.x (PS 9.x) movieron el renderizado del logo a la
+función Smarty `{renderLogo}`, definida en `_partials/helpers.tpl` y llamada por
+`_partials/header.tpl`. El layout del tema incluye `helpers.tpl` antes que
+`header.tpl`, pero las páginas públicas del módulo son documentos HTML completos que no
+pasan por el layout e incluían `header.tpl` directamente → Smarty lanzaba
+`SmartyCompilerException: unknown tag 'renderLogo'` → fatal con página en blanco.
+
+#### Corrección
+- `paylink.php`, `paylinkresult.php` y `error.php` asignan `datafast_theme_has_helpers`
+  (true solo si el tema activo provee `templates/_partials/helpers.tpl`, verificado con
+  `is_file(_PS_THEME_DIR_ . 'templates/_partials/helpers.tpl')`).
+- `paylink.tpl`, `paylinkSuccess.tpl` y `error.tpl` incluyen `_partials/helpers.tpl`
+  antes que `_partials/header.tpl`, únicamente cuando la bandera está activa.
+
+#### Compatibilidad
+En temas sin `helpers.tpl` (p. ej. classic de PS 1.7) la bandera es false y el
+comportamiento es idéntico al anterior: la compatibilidad 1.7.6.0+ queda intacta.
+
+#### Verificación
+- Reproducción local del error exacto del servidor con Smarty 4.5.5 (la versión que
+  corre la tienda afectada): sin el fix falla con `unknown tag 'renderLogo'`; con el
+  fix, las 5 combinaciones plantilla/estado (message, form, widget, error, comprobante)
+  renderizan y muestran el logo.
+- Escenario PS 1.7 (tema sin `helpers.tpl`): renderiza igual que antes del cambio.
+
 ### v2.6.1 (2026-06-07)
 Correcciones de compatibilidad con **PrestaShop 9** detectadas al verificar contra el core 9.0.3:
 - Eliminada la llamada a `StockAvailable::setProductDependsOnStock()` (método inexistente en PS9) en la creación del producto genérico, que hacía que los links de **monto libre** cayeran siempre a modo solo-registro en vez de crear el pedido. La orderabilidad del producto virtual se mantiene con `setProductOutOfStock` + `setQuantity`.
