@@ -46,11 +46,11 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.6.3';
+        $this->version = '2.7.0';
         $this->author = 'Datafast';
         $this->need_instance = 0;
         $this->is_configurable = 1;
-        $this->controllers = ['result', 'error', 'ajaxcall', 'ajaxtest', 'paylink', 'paylinkresult'];
+        $this->controllers = ['result', 'error', 'ajaxcall', 'ajaxtest', 'paylink', 'paylinkresult', 'paylinkapi'];
 
         $this->ps_versions_compliancy = ['min' => '1.7.6.0', 'max' => _PS_VERSION_];
 
@@ -1935,11 +1935,19 @@ class datafast extends PaymentModule
             $expiryDefault = 7;
         }
 
+        $apiKey = trim((string) Configuration::get('DATAFAST_PAYLINK_API_KEY'));
+        if ($apiKey === '') {
+            $apiKey = bin2hex(random_bytes(24));
+            Configuration::updateValue('DATAFAST_PAYLINK_API_KEY', $apiKey);
+        }
+
         $this->context->smarty->assign([
             'paylink_form_action' => AdminController::$currentIndex . '&configure=' . $this->name . '&token=' . Tools::getAdminTokenLite('AdminModules'),
             'paylink_products' => $this->getCatalogProductsForSelect(),
             'paylink_iva_rate_pct' => (int) round($ivaRate * 100),
             'paylink_expiry_default' => $expiryDefault,
+            'paylink_api_key' => $apiKey,
+            'paylink_api_url' => $this->context->link->getModuleLink($this->name, 'paylinkapi', [], true),
         ]);
 
         return $this->display(__FILE__, 'views/templates/admin/paymentLinks.tpl');

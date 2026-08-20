@@ -46,7 +46,8 @@ class DatafastPaymentLink
         $sql = 'INSERT INTO `' . _DB_PREFIX_ . 'datafast_paymentlinks`
             (`token`, `reference`, `description`, `amount`, `amount_iva0`,
              `amount_ivaimp`, `amount_iva`, `currency`, `link_type`,
-             `product_refs`, `status`, `expires_at`, `created_at`, `updated_at`)
+             `product_refs`, `payer_name`, `payer_email`, `payer_dni`, `payer_phone`,
+             `status`, `expires_at`, `created_at`, `updated_at`)
             VALUES (
                 \'' . pSQL($token) . '\',
                 \'' . pSQL($data['reference'] ?? '') . '\',
@@ -58,6 +59,10 @@ class DatafastPaymentLink
                 \'' . pSQL($data['currency'] ?? 'USD') . '\',
                 \'' . pSQL($data['link_type'] ?? self::TYPE_AMOUNT) . '\',
                 \'' . pSQL($data['product_refs'] ?? '') . '\',
+                ' . (!empty($data['payer_name']) ? '\'' . pSQL($data['payer_name']) . '\'' : 'NULL') . ',
+                ' . (!empty($data['payer_email']) ? '\'' . pSQL($data['payer_email']) . '\'' : 'NULL') . ',
+                ' . (!empty($data['payer_dni']) ? '\'' . pSQL($data['payer_dni']) . '\'' : 'NULL') . ',
+                ' . (!empty($data['payer_phone']) ? '\'' . pSQL($data['payer_phone']) . '\'' : 'NULL') . ',
                 \'' . self::STATUS_PENDING . '\',
                 \'' . pSQL($expiresAt) . '\',
                 \'' . pSQL($now) . '\',

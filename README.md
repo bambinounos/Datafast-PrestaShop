@@ -67,6 +67,13 @@ Permite cobrar a clientes **sin un datáfono físico** y **sin que el cliente se
 
 ## Changelog
 
+### v2.7.0 (2026-08-20)
+API REST y Webhook para integración de Links de Pago con **Dolibarr ERP/CRM** y sistemas externos:
+- **Endpoint API (`paylinkapi`):** Permite crear links de pago con datos de cliente y consultar su estado en tiempo real mediante autenticación por Clave API (`X-Datafast-Api-Key`).
+- **Webhook de Notificación:** Notifica automáticamente a Dolibarr (o URLs externas) al completarse y aprobarse un pago en Datafast.
+- **Precarga de Pagador:** Soporte para precargar datos de cliente (nombre, correo, cédula/RUC, teléfono) al crear el link vía API.
+- **Panel de Integración:** Visualización y copiado de la Clave API y URL de Endpoint desde el backoffice de PrestaShop.
+
 ### v2.6.3 (2026-08-20)
 Mejoras informativas y tono formal (de usted) en el formulario de link de pago público:
 - **Claridad de datos bancarios:** Se incorporó un aviso explicativo y textos de ayuda en cada campo indicando que los datos deben coincidir con los registrados en la entidad bancaria emisora (para evitar rechazos de 3D Secure / antifraude).

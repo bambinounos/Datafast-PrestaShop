@@ -98,6 +98,7 @@ class datafastPaylinkresultModuleFrontController extends ModuleFrontController
 
                 DatafastPaymentLink::markPaid($token, $idOrder, $idCart, $objResponse['id'] ?? '');
                 $this->recordTransaction($idCart ?? 0, $customerId, true, $objResponse);
+                $this->notifyWebhook($link, $objResponse);
 
                 if ($order && !empty($order['id_order'])) {
                     Tools::redirect('index.php?controller=order-confirmation'
@@ -420,6 +421,45 @@ class datafastPaylinkresultModuleFrontController extends ModuleFrontController
             \PrestaShopLogger::addLog('[Datafast] ' . $message, $level === 'error' ? 3 : 1);
         } catch (\Throwable $e) {
             // PrestaShopLogger no disponible
+        }
+    }
+
+    private function notifyWebhook(array $link, array $objResponse): void
+    {
+        $webhookUrl = trim((string) Configuration::get('DATAFAST_PAYLINK_WEBHOOK_URL'));
+        if ($webhookUrl === '') {
+            return;
+        }
+
+        try {
+            $apiKey = trim((string) Configuration::get('DATAFAST_PAYLINK_API_KEY'));
+            $payload = json_encode([
+                'token' => $link['token'],
+                'status' => 'paid',
+                'amount' => (float) ($objResponse['amount'] ?? $link['amount']),
+                'reference' => $link['reference'] ?? '',
+                'id_transaction' => $objResponse['id'] ?? '',
+                'auth_code' => $objResponse['resultDetails']['AuthCode'] ?? '',
+                'paid_at' => date('Y-m-d H:i:s')
+            ], JSON_UNESCAPED_UNICODE);
+
+            $ch = curl_init($webhookUrl);
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $payload,
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: application/json',
+                    'X-Datafast-Api-Key: ' . $apiKey
+                ],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 5,
+                CURLOPT_CONNECTTIMEOUT => 3,
+                CURLOPT_SSL_VERIFYPEER => false,
+            ]);
+            curl_exec($ch);
+            curl_close($ch);
+        } catch (\Throwable $e) {
+            \PrestaShopLogger::addLog('[Datafast] Webhook error: ' . $e->getMessage(), 2);
         }
     }
 }

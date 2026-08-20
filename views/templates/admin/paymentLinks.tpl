@@ -106,6 +106,23 @@
             </button>
         </div>
     </form>
+
+    <div class="panel-footer" style="margin-top:20px; background:#fbfbfb; border-top:1px solid #ddd; padding:15px 20px;">
+        <h4><i class="icon-cogs"></i> Integración Externa (Dolibarr / ERP / API)</h4>
+        <p class="text-muted" style="margin-bottom:10px;">
+            Utilice estos datos para conectar el módulo de <strong>Dolibarr</strong> o aplicaciones externas para generar links de pago automáticamente desde facturas:
+        </p>
+        <div class="row">
+            <div class="col-lg-6">
+                <label><strong>URL Endpoint API:</strong></label>
+                <input type="text" class="form-control" readonly value="{$paylink_api_url|escape:'html':'UTF-8'}" onclick="this.select();">
+            </div>
+            <div class="col-lg-6">
+                <label><strong>Clave Secreta API (API Key):</strong></label>
+                <input type="text" class="form-control" readonly value="{$paylink_api_key|escape:'html':'UTF-8'}" onclick="this.select();">
+            </div>
+        </div>
+    </div>
 </div>
 
 {literal}
