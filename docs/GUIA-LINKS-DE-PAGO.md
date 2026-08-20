@@ -38,7 +38,7 @@ Después de generarlo aparece un recuadro con la **URL**:
 ## 4. ¿Qué hace el cliente?
 
 1. Abre el link en su celular o computadora (**sin registrarse**).
-2. Ve el monto y completa: **nombre, correo, cédula/RUC y teléfono**.
+2. Ve el monto y completa los datos requeridos por el banco (**nombre tal cual figura en la tarjeta, correo registrado en el banco, cédula/RUC y teléfono celular para el SMS del banco**).
 3. Ingresa los datos de su **tarjeta** y paga.
 4. Ve la **confirmación** del pago.
 

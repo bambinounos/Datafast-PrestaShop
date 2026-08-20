@@ -57,7 +57,7 @@ class datafastPaylinkresultModuleFrontController extends ModuleFrontController
 
             if (!is_array($objResponse) || !isset($objResponse['result']['code'])) {
                 $this->safeLog('error', 'Respuesta inválida de Datafast (paylink). Response: ' . ($paymentResp ?: '(vacío)'));
-                $this->failWith('No se pudo confirmar el pago. Por favor intenta nuevamente.');
+                $this->failWith('No se pudo confirmar el pago. Por favor intente nuevamente.');
 
                 return;
             }
@@ -120,7 +120,7 @@ class datafastPaylinkresultModuleFrontController extends ModuleFrontController
             $this->failWith($extended ?: 'El pago no fue aprobado.');
         } catch (\Throwable $e) {
             $this->safeLog('error', 'Error crítico en paylinkresult: ' . $e->getMessage(), $e->getTrace());
-            $this->failWith('Ocurrió un error inesperado al procesar tu pago. Por favor intenta nuevamente.');
+            $this->failWith('Ocurrió un error inesperado al procesar su pago. Por favor intente nuevamente.');
         }
     }
 

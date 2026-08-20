@@ -39,7 +39,7 @@ class datafastPaylinkModuleFrontController extends ModuleFrontController
             return;
         }
         if ($link['status'] === DatafastPaymentLink::STATUS_PAID) {
-            $this->renderMessage('Este link de pago ya fue pagado. ¡Gracias por tu compra!');
+            $this->renderMessage('Este link de pago ya fue pagado. ¡Gracias por su compra!');
             return;
         }
         if ($link['status'] === DatafastPaymentLink::STATUS_CANCELLED) {
@@ -48,7 +48,7 @@ class datafastPaylinkModuleFrontController extends ModuleFrontController
         }
         if (DatafastPaymentLink::isExpired($link)) {
             DatafastPaymentLink::markStatus($token, DatafastPaymentLink::STATUS_EXPIRED);
-            $this->renderMessage('Este link de pago expiró. Solicita uno nuevo al comercio.');
+            $this->renderMessage('Este link de pago expiró. Solicite uno nuevo al comercio.');
             return;
         }
 
@@ -81,7 +81,7 @@ class datafastPaylinkModuleFrontController extends ModuleFrontController
                 DatafastPaymentLink::savePayer($token, $payer);
                 $checkoutId = $this->buildCheckout($link, $payer);
                 if (empty($checkoutId)) {
-                    $this->context->smarty->assign('paylink_error', 'No se pudo iniciar el pago. Por favor intenta nuevamente en unos minutos.');
+                    $this->context->smarty->assign('paylink_error', 'No se pudo iniciar el pago. Por favor intente nuevamente en unos minutos.');
                 } else {
                     DatafastPaymentLink::saveCheckoutId($token, $checkoutId);
                     $this->assignWidget($link, $token, $checkoutId);
@@ -105,17 +105,17 @@ class datafastPaylinkModuleFrontController extends ModuleFrontController
     private function validatePayer(array $payer): string
     {
         if (mb_strlen($payer['name']) < 3) {
-            return 'Ingresa tu nombre completo.';
+            return 'Por favor, ingresa el nombre del titular tal como se muestra en la tarjeta.';
         }
         if (!Validate::isEmail($payer['email'])) {
-            return 'Ingresa un correo electrónico válido.';
+            return 'Por favor, ingresa un correo electrónico válido registrado en tu banco.';
         }
         $dni = preg_replace('/\D/', '', $payer['dni']);
         if (strlen($dni) < 10) {
-            return 'Ingresa tu cédula o RUC (mínimo 10 dígitos).';
+            return 'Por favor, ingresa la cédula o RUC del titular de la tarjeta (mínimo 10 dígitos).';
         }
         if (mb_strlen($payer['phone']) < 7) {
-            return 'Ingresa un número de teléfono válido.';
+            return 'Por favor, ingresa un número de teléfono celular válido registrado en tu banco.';
         }
 
         return '';

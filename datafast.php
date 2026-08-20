@@ -46,8 +46,8 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.6.2';
-        $this->author = 'Sismetic';
+        $this->version = '2.6.3';
+        $this->author = 'Datafast';
         $this->need_instance = 0;
         $this->is_configurable = 1;
         $this->controllers = ['result', 'error', 'ajaxcall', 'ajaxtest', 'paylink', 'paylinkresult'];

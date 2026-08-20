@@ -67,6 +67,12 @@ Permite cobrar a clientes **sin un datáfono físico** y **sin que el cliente se
 
 ## Changelog
 
+### v2.6.3 (2026-08-20)
+Mejoras informativas y tono formal (de usted) en el formulario de link de pago público:
+- **Claridad de datos bancarios:** Se incorporó un aviso explicativo y textos de ayuda en cada campo indicando que los datos deben coincidir con los registrados en la entidad bancaria emisora (para evitar rechazos de 3D Secure / antifraude).
+- **Nombre en la tarjeta:** Se especificó explícitamente que el nombre debe coincidir tal cual figura impreso en el plástico de la tarjeta.
+- **Tono formal:** Adaptación de todos los textos, validaciones y comprobantes a lenguaje formal ("de usted").
+
 ### v2.6.2 (2026-08-14)
 Corrección crítica: las páginas públicas del módulo (link de pago, comprobante y página
 de error) caían con **HTTP 500** en PrestaShop 8.2+/9.x con el tema classic.

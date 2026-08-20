@@ -112,7 +112,7 @@
                                     brandDetectionPriority: ["VISA", "ALIA", "MASTER", "AMEX", "DINERS", "DISCOVER"],
                                     labels: {
                                         cvv: "CVV",
-                                        cardHolder: "Nombre(Igual que en la tarjeta)"
+                                        cardHolder: "Nombre (tal como figura en la tarjeta)"
                                     },
                                     registrations: {
                                         requireCvv: {$requirecvv},
@@ -137,33 +137,43 @@
                             <article class="alert alert-danger" role="alert">{$paylink_error|escape:'html':'UTF-8'}</article>
                         {/if}
 
-                        <p>Completa tus datos para continuar al pago seguro con tu tarjeta:</p>
+                        <div class="alert alert-info" role="alert" style="margin-bottom:20px; line-height:1.5;">
+                            <strong>Información importante:</strong> Para evitar que el banco rechace el cobro o falle la verificación, ingrese los datos tal como están <strong>registrados en su entidad bancaria</strong> y el nombre <strong>tal cual se muestra en la tarjeta de crédito o débito</strong>.
+                        </div>
 
                         <form method="post" action="{$paylink_form_action|escape:'html':'UTF-8'}">
                             <input type="hidden" name="submitDatafastPayer" value="1">
 
                             <div class="form-group">
-                                <label class="form-control-label">Nombre completo</label>
+                                <label class="form-control-label"><strong>Nombre (tal cual se muestra en la tarjeta)</strong> <span class="text-danger">*</span></label>
                                 <input type="text" name="payer_name" class="form-control" required
+                                       placeholder="Ej: JUAN P PEREZ"
                                        value="{$payer_name|escape:'html':'UTF-8'}">
+                                <small class="form-text text-muted">Ingrese el nombre del titular exactamente como aparece impreso en el plástico de la tarjeta.</small>
                             </div>
                             <div class="form-group">
-                                <label class="form-control-label">Correo electrónico</label>
+                                <label class="form-control-label"><strong>Correo electrónico (registrado en el banco)</strong> <span class="text-danger">*</span></label>
                                 <input type="email" name="payer_email" class="form-control" required
+                                       placeholder="correo@ejemplo.com"
                                        value="{$payer_email|escape:'html':'UTF-8'}">
+                                <small class="form-text text-muted">Correo electrónico donde su banco envía estados de cuenta, notificaciones o códigos de seguridad.</small>
                             </div>
                             <div class="form-group">
-                                <label class="form-control-label">Cédula / RUC</label>
+                                <label class="form-control-label"><strong>Cédula / RUC (registrado en el banco)</strong> <span class="text-danger">*</span></label>
                                 <input type="text" name="payer_dni" class="form-control" required
+                                       placeholder="Ej: 1712345678"
                                        value="{$payer_dni|escape:'html':'UTF-8'}">
+                                <small class="form-text text-muted">Número de identificación del titular registrado en su entidad bancaria.</small>
                             </div>
                             <div class="form-group">
-                                <label class="form-control-label">Teléfono</label>
+                                <label class="form-control-label"><strong>Teléfono celular (registrado en el banco)</strong> <span class="text-danger">*</span></label>
                                 <input type="text" name="payer_phone" class="form-control" required
+                                       placeholder="Ej: 0991234567"
                                        value="{$payer_phone|escape:'html':'UTF-8'}">
+                                <small class="form-text text-muted">Número móvil donde su banco le envía el SMS o código de autorización (OTP) de 3D Secure.</small>
                             </div>
 
-                            <button type="submit" class="btn btn-primary">Continuar al pago</button>
+                            <button type="submit" class="btn btn-primary btn-lg" style="margin-top:10px; width:100%;">Continuar al pago seguro</button>
                         </form>
 
                     {/if}

@@ -26,7 +26,7 @@
 
                     <article class="alert alert-success" role="alert">
                         <h3>¡Pago aprobado!</h3>
-                        <p>Tu pago se procesó correctamente. Gracias por tu compra.</p>
+                        <p>Su pago se procesó correctamente. Gracias por su compra.</p>
                     </article>
 
                     <ul class="list-unstyled">
