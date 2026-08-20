@@ -428,11 +428,30 @@ class datafastPaylinkresultModuleFrontController extends ModuleFrontController
     {
         $webhookUrl = trim((string) Configuration::get('DATAFAST_PAYLINK_WEBHOOK_URL'));
         if ($webhookUrl === '') {
+            $webhookUrl = trim((string) Configuration::getGlobalValue('DATAFAST_PAYLINK_WEBHOOK_URL'));
+        }
+        if ($webhookUrl === '') {
             return;
         }
 
         try {
             $apiKey = trim((string) Configuration::get('DATAFAST_PAYLINK_API_KEY'));
+            if ($apiKey === '') {
+                $apiKey = trim((string) Configuration::getGlobalValue('DATAFAST_PAYLINK_API_KEY'));
+            }
+            if ($apiKey === '') {
+                try {
+                    $rows = Db::getInstance()->executeS('SELECT `value` FROM `' . _DB_PREFIX_ . 'configuration` WHERE `name` = "DATAFAST_PAYLINK_API_KEY"');
+                    if (is_array($rows) && !empty($rows[0]['value'])) {
+                        $apiKey = trim((string) $rows[0]['value']);
+                    }
+                } catch (\Throwable $e) {
+                }
+            }
+
+            $sep = (strpos($webhookUrl, '?') !== false) ? '&' : '?';
+            $targetUrl = $webhookUrl . $sep . 'api_key=' . urlencode($apiKey);
+
             $payload = json_encode([
                 'token' => $link['token'],
                 'status' => 'paid',
@@ -443,13 +462,14 @@ class datafastPaylinkresultModuleFrontController extends ModuleFrontController
                 'paid_at' => date('Y-m-d H:i:s')
             ], JSON_UNESCAPED_UNICODE);
 
-            $ch = curl_init($webhookUrl);
+            $ch = curl_init($targetUrl);
             curl_setopt_array($ch, [
                 CURLOPT_POST => true,
                 CURLOPT_POSTFIELDS => $payload,
                 CURLOPT_HTTPHEADER => [
                     'Content-Type: application/json',
-                    'X-Datafast-Api-Key: ' . $apiKey
+                    'X-Datafast-Api-Key: ' . $apiKey,
+                    'Authorization: Bearer ' . $apiKey
                 ],
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => 5,

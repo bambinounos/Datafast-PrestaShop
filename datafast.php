@@ -46,7 +46,7 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.7.3';
+        $this->version = '2.7.4';
         $this->author = 'Datafast';
         $this->need_instance = 0;
         $this->is_configurable = 1;
@@ -529,6 +529,12 @@ class datafast extends PaymentModule
                 $this->_html .= $this->displayConfirmation($this->trans('Settings updated', array(), 'Admin.Notifications.Success'));
             }
 
+        }
+        elseif (Tools::isSubmit('submitPaylinkWebhook')) {
+            $webhookUrl = trim((string) Tools::getValue('DATAFAST_PAYLINK_WEBHOOK_URL'));
+            Configuration::updateValue('DATAFAST_PAYLINK_WEBHOOK_URL', $webhookUrl);
+            Configuration::updateGlobalValue('DATAFAST_PAYLINK_WEBHOOK_URL', $webhookUrl);
+            $this->_html .= $this->displayConfirmation('URL de Webhook guardada exitosamente.');
         }
         elseif (Tools::isSubmit('submitCreatePaymentLink')) {
             $this->_html .= $this->processCreatePaymentLink();
@@ -1961,6 +1967,7 @@ class datafast extends PaymentModule
             'paylink_expiry_default' => $expiryDefault,
             'paylink_api_key' => $apiKey,
             'paylink_api_url' => $this->context->link->getModuleLink($this->name, 'paylinkapi', [], true),
+            'paylink_webhook_url' => (string) Configuration::get('DATAFAST_PAYLINK_WEBHOOK_URL'),
         ]);
 
         return $this->display(__FILE__, 'views/templates/admin/paymentLinks.tpl');

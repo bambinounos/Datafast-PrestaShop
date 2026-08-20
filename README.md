@@ -67,6 +67,11 @@ Permite cobrar a clientes **sin un datáfono físico** y **sin que el cliente se
 
 ## Changelog
 
+### v2.7.4 (2026-08-20)
+Configuración visual de Webhook de Dolibarr / ERP:
+- **Panel de Webhook en Backoffice:** Campo para guardar la URL de Webhook de Dolibarr directamente desde la pestaña *Links de Pago*.
+- **Despacho Seguro de Webhook:** Envío de notificación con autenticación multi-canal (Query `api_key`, `X-Datafast-Api-Key` y `Authorization: Bearer`).
+
 ### v2.7.3 (2026-08-20)
 Corrección crítica en validación de API Key:
 - **Corrección de flujo de autenticación:** Eliminada la comprobación prematura en memoria que bloqueaba la consulta SQL de respaldo en servidores con configuraciones globales (`id_shop = NULL`).

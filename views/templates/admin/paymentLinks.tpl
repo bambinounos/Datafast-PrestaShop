@@ -122,6 +122,25 @@
                 <input type="text" class="form-control" readonly value="{$paylink_api_key|escape:'html':'UTF-8'}" onclick="this.select();">
             </div>
         </div>
+
+        <hr style="margin:15px 0;">
+
+        <form method="post" action="{$paylink_form_action|escape:'html':'UTF-8'}">
+            <div class="form-group" style="margin-bottom:0;">
+                <label><strong>URL de Webhook de Dolibarr (Notificación Automática de Pagos):</strong></label>
+                <p class="text-muted small">
+                    Pegue aquí la URL de Webhook generada por su Dolibarr (ej. <code>http://www.erp-hellbamsa.cyou/custom/datafastpaylink/public/webhook.php</code>). PrestaShop notificará a esta URL al instante cuando un cobro sea aprobado.
+                </p>
+                <div class="input-group">
+                    <input type="text" name="DATAFAST_PAYLINK_WEBHOOK_URL" class="form-control" value="{$paylink_webhook_url|escape:'html':'UTF-8'}" placeholder="http://www.erp-hellbamsa.cyou/custom/datafastpaylink/public/webhook.php">
+                    <span class="input-group-btn">
+                        <button type="submit" name="submitPaylinkWebhook" class="btn btn-default">
+                            <i class="icon-save"></i> Guardar Webhook
+                        </button>
+                    </span>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
