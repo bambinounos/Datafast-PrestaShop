@@ -118,13 +118,37 @@ class datafastPaylinkapiModuleFrontController extends ModuleFrontController
             $providedKey = trim((string) Tools::getValue('api_key'));
         }
         if ($providedKey === '') {
-            $jsonBody = json_decode((string) file_get_contents('php://input'), true);
-            if (is_array($jsonBody) && !empty($jsonBody['api_key'])) {
-                $providedKey = trim((string) $jsonBody['api_key']);
-            }
+            return false;
         }
 
-        return $providedKey !== '' && hash_equals($configuredKey, $providedKey);
+        // 4. Comparar con Configuration::get y getGlobalValue
+        $configuredKey = trim((string) Configuration::get('DATAFAST_PAYLINK_API_KEY'));
+        if ($configuredKey !== '' && hash_equals($configuredKey, $providedKey)) {
+            return true;
+        }
+
+        $globalKey = trim((string) Configuration::getGlobalValue('DATAFAST_PAYLINK_API_KEY'));
+        if ($globalKey !== '' && hash_equals($globalKey, $providedKey)) {
+            return true;
+        }
+
+        // 5. Consulta directa a la base de datos para mitigar desajustes de multitienda / caché
+        try {
+            $sql = 'SELECT `value` FROM `' . _DB_PREFIX_ . 'configuration` WHERE `name` = "DATAFAST_PAYLINK_API_KEY"';
+            $rows = Db::getInstance()->executeS($sql);
+            if (is_array($rows)) {
+                foreach ($rows as $row) {
+                    $dbKey = trim((string) ($row['value'] ?? ''));
+                    if ($dbKey !== '' && hash_equals($dbKey, $providedKey)) {
+                        return true;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Continuar
+        }
+
+        return false;
     }
 
     /**

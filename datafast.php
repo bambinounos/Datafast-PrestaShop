@@ -46,7 +46,7 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.7.1';
+        $this->version = '2.7.2';
         $this->author = 'Datafast';
         $this->need_instance = 0;
         $this->is_configurable = 1;

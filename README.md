@@ -67,6 +67,10 @@ Permite cobrar a clientes **sin un datáfono físico** y **sin que el cliente se
 
 ## Changelog
 
+### v2.7.2 (2026-08-20)
+Consulta directa en base de datos para verificación de API Key:
+- **Respaldo directo SQL:** Consulta directa en la tabla `configuration` para validar la API Key independientemente de la tienda seleccionada en multitienda o del caché de configuración de PrestaShop.
+
 ### v2.7.1 (2026-08-20)
 Corrección de autenticación API para integración con Dolibarr y servidores con FastCGI / Nginx / Apache:
 - **Autenticación Multi-Canal:** Detección de API Key vía `getallheaders()`, `$_SERVER['HTTP_X_DATAFAST_API_KEY']`, `Authorization: Bearer`, `$_SERVER['REDIRECT_HTTP_AUTHORIZATION']` y parámetro `api_key`.
