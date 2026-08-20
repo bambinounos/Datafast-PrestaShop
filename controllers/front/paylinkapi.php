@@ -64,15 +64,6 @@ class datafastPaylinkapiModuleFrontController extends ModuleFrontController
      */
     protected function checkApiKey(): bool
     {
-        $configuredKey = trim((string) Configuration::get('DATAFAST_PAYLINK_API_KEY'));
-        if ($configuredKey === '') {
-            $configuredKey = trim((string) Configuration::getGlobalValue('DATAFAST_PAYLINK_API_KEY'));
-        }
-
-        if ($configuredKey === '') {
-            return false;
-        }
-
         $providedKey = '';
 
         // 1. Revisar getallheaders() / apache_request_headers()

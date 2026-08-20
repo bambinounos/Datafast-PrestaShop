@@ -67,6 +67,10 @@ Permite cobrar a clientes **sin un datáfono físico** y **sin que el cliente se
 
 ## Changelog
 
+### v2.7.3 (2026-08-20)
+Corrección crítica en validación de API Key:
+- **Corrección de flujo de autenticación:** Eliminada la comprobación prematura en memoria que bloqueaba la consulta SQL de respaldo en servidores con configuraciones globales (`id_shop = NULL`).
+
 ### v2.7.2 (2026-08-20)
 Consulta directa en base de datos para verificación de API Key:
 - **Respaldo directo SQL:** Consulta directa en la tabla `configuration` para validar la API Key independientemente de la tienda seleccionada en multitienda o del caché de configuración de PrestaShop.
