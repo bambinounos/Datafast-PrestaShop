@@ -56,14 +56,14 @@ Permite cobrar a clientes **sin un datáfono físico** y **sin que el cliente se
 
 > 📘 **Guía para el personal de tienda:** pasos para generar y enviar links, ver [`docs/GUIA-LINKS-DE-PAGO.md`](docs/GUIA-LINKS-DE-PAGO.md).
 
-**Configuración opcional** (con valores por defecto al instalar):
+## Integración Externa con Dolibarr ERP/CRM (datafastpaylink)
 
-| Clave | Descripción | Default |
-|-------|-------------|---------|
-| `DATAFAST_PAYLINK_EXPIRY_DAYS` | Días de validez del link | 7 |
-| `DATAFAST_PAYLINK_IVA_RATE` | Tasa de IVA para el desglose de montos | 0.15 |
-| `DATAFAST_PAYLINK_CREATE_ORDER` | Crear pedido al pagar | activado |
-| `DATAFAST_PAYLINK_GENERIC_PRODUCT` | Producto genérico (virtual) para links de monto libre | se crea automáticamente |
+El módulo incluye un endpoint REST (`paylinkapi`) y sistema de webhooks para integrarse de forma nativa con el módulo de Dolibarr **`datafastpaylink`** (v1.2.0):
+
+- **Creación remota de links:** Dolibarr puede emitir enlaces de pago con el saldo de una factura y precargar automáticamente los datos del pagador (Nombre tal cual figura en la tarjeta, Cédula/RUC, correo y teléfono).
+- **Notificación por Webhook:** Al aprobarse un cobro en Datafast, PrestaShop notifica inmediatamente a Dolibarr (`/public/webhook.php`) para registrar el pago y asentar el valor líquido en la cuenta bancaria.
+- **Autenticación Multi-Canal:** Seguridad por Clave Secreta API compatible con Cloudflare, proxies inversos y servidores Apache/Nginx/FastCGI.
+- **Configuración en Backoffice:** En *Módulos → Datafast → Links de Pago*, copie la **URL Endpoint API** y la **Clave Secreta API**, y pegue la **URL de Webhook de Dolibarr**.
 
 ## Changelog
 
