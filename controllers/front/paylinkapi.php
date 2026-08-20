@@ -65,28 +65,63 @@ class datafastPaylinkapiModuleFrontController extends ModuleFrontController
     protected function checkApiKey(): bool
     {
         $configuredKey = trim((string) Configuration::get('DATAFAST_PAYLINK_API_KEY'));
-
-        // Si aún no existe una API Key configurada, se genera una de forma segura
         if ($configuredKey === '') {
-            $configuredKey = bin2hex(random_bytes(24));
-            Configuration::updateValue('DATAFAST_PAYLINK_API_KEY', $configuredKey);
+            $configuredKey = trim((string) Configuration::getGlobalValue('DATAFAST_PAYLINK_API_KEY'));
+        }
+
+        if ($configuredKey === '') {
+            return false;
         }
 
         $providedKey = '';
 
-        // Revisar cabeceras HTTP estándar
-        if (isset($_SERVER['HTTP_X_DATAFAST_API_KEY'])) {
-            $providedKey = trim((string) $_SERVER['HTTP_X_DATAFAST_API_KEY']);
-        } elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-            $auth = trim((string) $_SERVER['HTTP_AUTHORIZATION']);
-            if (stripos($auth, 'Bearer ') === 0) {
-                $providedKey = trim(substr($auth, 7));
+        // 1. Revisar getallheaders() / apache_request_headers()
+        if (function_exists('getallheaders')) {
+            $headers = getallheaders();
+            if (is_array($headers)) {
+                foreach ($headers as $headerName => $headerValue) {
+                    if (strcasecmp((string) $headerName, 'X-Datafast-Api-Key') === 0) {
+                        $providedKey = trim((string) $headerValue);
+                        break;
+                    }
+                    if (strcasecmp((string) $headerName, 'Authorization') === 0 && stripos((string) $headerValue, 'Bearer ') === 0) {
+                        $providedKey = trim(substr((string) $headerValue, 7));
+                        break;
+                    }
+                }
             }
         }
 
-        // Respaldo por parámetro GET/POST
+        // 2. Revisar variables de servidor $_SERVER
+        if ($providedKey === '') {
+            if (!empty($_SERVER['HTTP_X_DATAFAST_API_KEY'])) {
+                $providedKey = trim((string) $_SERVER['HTTP_X_DATAFAST_API_KEY']);
+            } elseif (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
+                $auth = trim((string) $_SERVER['HTTP_AUTHORIZATION']);
+                if (stripos($auth, 'Bearer ') === 0) {
+                    $providedKey = trim(substr($auth, 7));
+                } else {
+                    $providedKey = $auth;
+                }
+            } elseif (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+                $auth = trim((string) $_SERVER['REDIRECT_HTTP_AUTHORIZATION']);
+                if (stripos($auth, 'Bearer ') === 0) {
+                    $providedKey = trim(substr($auth, 7));
+                } else {
+                    $providedKey = $auth;
+                }
+            }
+        }
+
+        // 3. Respaldo por parámetro GET / POST / JSON body
         if ($providedKey === '') {
             $providedKey = trim((string) Tools::getValue('api_key'));
+        }
+        if ($providedKey === '') {
+            $jsonBody = json_decode((string) file_get_contents('php://input'), true);
+            if (is_array($jsonBody) && !empty($jsonBody['api_key'])) {
+                $providedKey = trim((string) $jsonBody['api_key']);
+            }
         }
 
         return $providedKey !== '' && hash_equals($configuredKey, $providedKey);

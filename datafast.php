@@ -46,7 +46,7 @@ class datafast extends PaymentModule
     {
         $this->name = 'datafast';
         $this->tab = 'payments_gateways';
-        $this->version = '2.7.0';
+        $this->version = '2.7.1';
         $this->author = 'Datafast';
         $this->need_instance = 0;
         $this->is_configurable = 1;
@@ -1937,7 +1937,11 @@ class datafast extends PaymentModule
 
         $apiKey = trim((string) Configuration::get('DATAFAST_PAYLINK_API_KEY'));
         if ($apiKey === '') {
+            $apiKey = trim((string) Configuration::getGlobalValue('DATAFAST_PAYLINK_API_KEY'));
+        }
+        if ($apiKey === '') {
             $apiKey = bin2hex(random_bytes(24));
+            Configuration::updateGlobalValue('DATAFAST_PAYLINK_API_KEY', $apiKey);
             Configuration::updateValue('DATAFAST_PAYLINK_API_KEY', $apiKey);
         }
 

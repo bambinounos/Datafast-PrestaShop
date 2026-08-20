@@ -67,6 +67,11 @@ Permite cobrar a clientes **sin un datáfono físico** y **sin que el cliente se
 
 ## Changelog
 
+### v2.7.1 (2026-08-20)
+Corrección de autenticación API para integración con Dolibarr y servidores con FastCGI / Nginx / Apache:
+- **Autenticación Multi-Canal:** Detección de API Key vía `getallheaders()`, `$_SERVER['HTTP_X_DATAFAST_API_KEY']`, `Authorization: Bearer`, `$_SERVER['REDIRECT_HTTP_AUTHORIZATION']` y parámetro `api_key`.
+- **Persistencia Global de Clave API:** Almacenamiento y consulta a nivel global (`Configuration::getGlobalValue`) para garantizar coincidencia entre Front-Office y Back-Office.
+
 ### v2.7.0 (2026-08-20)
 API REST y Webhook para integración de Links de Pago con **Dolibarr ERP/CRM** y sistemas externos:
 - **Endpoint API (`paylinkapi`):** Permite crear links de pago con datos de cliente y consultar su estado en tiempo real mediante autenticación por Clave API (`X-Datafast-Api-Key`).
